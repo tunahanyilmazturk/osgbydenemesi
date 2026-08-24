@@ -1,6 +1,6 @@
 ﻿const styles: Record<string, string> = {
   Bekliyor: 'bg-amber-100 text-amber-700',
-  'Numune Bekliyor': 'bg-amber-100 text-amber-700',
+  'İşlem Bekliyor': 'bg-amber-100 text-amber-700',
   Tamamlandı: 'bg-emerald-100 text-emerald-700',
   'Sonuç Bekleniyor': 'bg-blue-100 text-blue-700',
   'Sonuç Girildi': 'bg-violet-100 text-violet-700',
@@ -11,7 +11,7 @@
 
 const labels: Record<string, string> = {
   Bekliyor: 'Bekliyor',
-  'Numune Bekliyor': 'Numune Bek.',
+  'İşlem Bekliyor': 'Numune Bek.',
   Tamamlandı: 'Tamamlandı',
   'Sonuç Bekleniyor': 'Sonuç Bek.',
   'Sonuç Girildi': 'Sonuç Gir.',

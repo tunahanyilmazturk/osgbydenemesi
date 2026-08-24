@@ -1,5 +1,5 @@
 ﻿import { createContext, useContext, useEffect, useState } from 'react'
-import { allProtocols } from '../data/mockData'
+import { allProtocols } from './mocks/protocolsMock'
 import type { Protocol, ProtocolPayment, ProtocolService } from '../types'
 import { loadFromStorage, saveToStorage } from '../utils/storage'
 

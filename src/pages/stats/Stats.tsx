@@ -515,7 +515,7 @@ export function Stats() {
           >
             <option value="Tümü">Tüm Durumlar</option>
             <option value="Barkod Verildi">Barkod Verildi</option>
-            <option value="Numune Bekliyor">Numune Bekliyor</option>
+            <option value="İşlem Bekliyor">İşlem Bekliyor</option>
             <option value="Numune Kabul">Numune Kabul</option>
             <option value="Sonuç Bekleniyor">Sonuç Bekleniyor</option>
             <option value="Sonuç Girildi">Sonuç Girildi</option>

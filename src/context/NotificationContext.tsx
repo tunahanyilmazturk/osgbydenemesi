@@ -84,12 +84,12 @@ function deriveNotifications(
         })
       }
       // Numune bekliyor
-      if (service.status === 'Numune Bekliyor' || service.status === 'Barkod Verildi') {
+      if (service.status === 'İşlem Bekliyor' || service.status === 'Barkod Verildi') {
         const id = `pending-sample-${service.id}`
         notifications.push({
           id,
           type: 'pending_sample',
-          title: 'Numune Bekliyor',
+          title: 'İşlem Bekliyor',
           message: `${protocol.patientName} — ${service.name} (${protocol.protocolNo})`,
           protocolId: protocol.id,
           serviceId: service.id,

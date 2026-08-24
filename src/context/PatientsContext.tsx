@@ -1,5 +1,5 @@
 ﻿import { createContext, useContext, useEffect, useState } from 'react'
-import { allPatients } from '../data/mockData'
+import { allPatients } from './mocks/patientsMock'
 import type { PatientDetail } from '../types'
 import { nowLocalDateTime, nowLocalTime } from '../utils/date'
 import { loadFromStorage, saveToStorage } from '../utils/storage'

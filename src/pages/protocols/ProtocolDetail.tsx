@@ -3,6 +3,7 @@ import { ArrowLeft, Barcode, Mail, Phone, Plus, Printer, Trash2, User } from 'lu
 import { useNavigate, useParams } from 'react-router-dom'
 import { usePatients } from '../../context/PatientsContext'
 import { useProtocols } from '../../context/ProtocolsContext'
+import { useCompanies } from '../../context/CompaniesContext'
 import { useConfirm } from '../../context/ConfirmContext'
 import { ServiceModal } from '../../pages/protocols/components/ServiceModal'
 import { VezneTransactions } from '../../pages/vezne/components/VezneTransactions'
@@ -17,6 +18,7 @@ export function ProtocolDetail() {
   const navigate = useNavigate()
   const { patients } = usePatients()
   const { protocols, addServiceToProtocol, removeServiceFromProtocol, updateServiceInProtocol } = useProtocols()
+  const { companies: companyList } = useCompanies()
   const confirm = useConfirm()
 
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -80,6 +82,7 @@ export function ProtocolDetail() {
     const ok = await confirm({
       title: 'Hizmet Sil',
       message: 'Hizmeti silmek istediğinize emin misiniz?',
+      skipKey: 'delete-service',
     })
     if (ok) {
       removeServiceFromProtocol(protocol.id, serviceId)
@@ -509,6 +512,7 @@ export function ProtocolDetail() {
         onClose={() => setIsModalOpen(false)}
         patient={patient}
         protocol={protocol}
+        companyServices={companyList.find((c) => c.name === protocol.company)?.companyServices ?? []}
         onAddService={handleAddService}
         onRemoveService={handleDeleteService}
       />

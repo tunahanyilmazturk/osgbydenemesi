@@ -80,6 +80,7 @@ export interface EyeExaminationData {
 export interface ProtocolService {
   id: number
   protocolId: number
+  code: number
   status: string
   barcode: string
   processDate: string
@@ -103,6 +104,12 @@ export interface ProtocolService {
   // Odyometri ve göz taraması özel veri
   audiometryData?: string
   eyeExaminationData?: string
+  // Dış laboratuvardan yüklenen PDF sonuç
+  pdfData?: string
+  pdfName?: string
+  pdfId?: string
+  // Test notu
+  note?: string
 }
 
 export interface ProtocolPayment {
@@ -130,13 +137,35 @@ export interface Protocol {
   payments: ProtocolPayment[]
 }
 
+export interface ServiceGroup {
+  id: number
+  name: string
+  color: string
+  labIds: number[]
+  defaultTubeTypeId: number | null
+}
+
+export interface ServiceTubeType {
+  id: number
+  name: string
+  colorCode: string
+  description: string
+  isActive: boolean
+}
+
 export interface ServiceCatalogItem {
   id: number
+  code: number
   name: string
   group: string
   price: number
   vatRate: number
-  companies: string[]
+  isActive: boolean
+  description: string
+  unit: string
+  referenceRange: string
+  labIds: number[]
+  tubeTypeId: number | null
 }
 
 export interface PackageService {
@@ -186,4 +215,25 @@ export interface ExternalLab {
   username: string
   webServiceAddress: string
   type: string
+}
+
+export interface ExternalLabSendService {
+  serviceId: number
+  protocolId: number
+  patientName: string
+  serviceName: string
+  barcode: string
+  protocolNo: string
+}
+
+export interface ExternalLabSendRecord {
+  id: number
+  sendDate: string
+  externalLabId: number
+  externalLabName: string
+  patientCount: number
+  serviceCount: number
+  status: 'Gönderildi' | 'Hazırlanıyor' | 'İptal'
+  sentBy: string
+  services: ExternalLabSendService[]
 }

@@ -9,6 +9,8 @@ interface ConfirmModalProps {
   confirmText?: string
   cancelText?: string
   confirmVariant?: 'danger' | 'primary'
+  skipKey?: string
+  onSkipConfirm?: (key: string) => void
 }
 
 export function ConfirmModal({
@@ -20,8 +22,15 @@ export function ConfirmModal({
   confirmText = 'Sil',
   cancelText = 'İptal',
   confirmVariant = 'danger',
+  skipKey,
+  onSkipConfirm,
 }: ConfirmModalProps) {
   if (!isOpen) return null
+
+  const handleConfirmClick = () => {
+    onConfirm()
+    onClose()
+  }
 
   return (
     <div
@@ -47,6 +56,21 @@ export function ConfirmModal({
         </div>
         <div className="p-6">
           <p className="text-sm text-slate-600">{message}</p>
+          {skipKey && (
+            <label className="flex items-center gap-2 mt-4 text-xs text-slate-500 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                id="skip-confirm"
+                className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                onChange={(e) => {
+                  if (e.target.checked && onSkipConfirm) {
+                    onSkipConfirm(skipKey)
+                  }
+                }}
+              />
+              Bu işlem için tekrar sorma
+            </label>
+          )}
         </div>
         <div className="px-6 py-4 bg-slate-50 flex items-center justify-end gap-3">
           {cancelText && (
@@ -58,10 +82,7 @@ export function ConfirmModal({
             </button>
           )}
           <button
-            onClick={() => {
-              onConfirm()
-              onClose()
-            }}
+            onClick={handleConfirmClick}
             className={`px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors ${
               confirmVariant === 'danger'
                 ? 'bg-red-600 hover:bg-red-700'

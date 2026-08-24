@@ -1,5 +1,5 @@
 ﻿import { useEffect, useMemo, useState } from 'react'
-import { ArrowLeftRight, Banknote, Building2, CheckSquare, CreditCard, MinusCircle, Percent, Receipt, Save, Square, Trash2 } from 'lucide-react'
+import { ArrowLeftRight, Banknote, Building2, CreditCard, MinusCircle, Percent, Receipt, Save, Square, Trash2 } from 'lucide-react'
 import { useProtocols } from '../../../context/ProtocolsContext'
 import { useConfirm } from '../../../context/ConfirmContext'
 import type { Protocol } from '../../../types'
@@ -135,9 +135,75 @@ export function VezneTransactions({ protocol }: VezneTransactionsProps) {
 
   return (
     <div className="space-y-3">
+      {/* Üst: Vezne Bilgisi — yatay özet şeridi */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-3">
+        <div className="flex items-center gap-4 flex-wrap">
+          <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2 shrink-0">
+            <Receipt className="w-4 h-4 text-blue-500" />
+            Vezne Bilgisi
+          </h3>
+          <div className="flex items-center gap-3 flex-wrap text-xs">
+            <div className="flex items-center gap-1.5">
+              <span className="text-slate-500">Toplam KDV:</span>
+              <span className="font-medium text-slate-800">₺{totalKdv.toFixed(2)}</span>
+            </div>
+            <span className="w-px h-3 bg-slate-200" />
+            <div className="flex items-center gap-1.5">
+              <span className="text-slate-500">Toplam Tutar:</span>
+              <span className="font-medium text-slate-800">₺{totalAmount.toFixed(2)}</span>
+            </div>
+            <span className="w-px h-3 bg-slate-200" />
+            <div className="flex items-center gap-1.5">
+              <span className="text-slate-500">Ödenen:</span>
+              <span className="font-medium text-emerald-600">₺{totalPaid.toFixed(2)}</span>
+            </div>
+            <span className="w-px h-3 bg-slate-200" />
+            <div className="flex items-center gap-1.5">
+              <span className="text-slate-500">İndirim:</span>
+              <span className="font-medium text-amber-600">₺{totalDiscount.toFixed(2)}</span>
+            </div>
+            <span className="w-px h-3 bg-slate-200" />
+            <div className="flex items-center gap-1.5">
+              <span className="text-slate-800 font-bold">Kalan:</span>
+              <span className={`font-bold ${remaining <= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                {remaining < 0 ? `Fazla: +₺${Math.abs(remaining).toFixed(2)}` : `₺${remaining.toFixed(2)}`}
+              </span>
+            </div>
+          </div>
+          {/* Hızlı butonlar */}
+          <div className="flex items-center gap-1.5 ml-auto">
+            <button
+              onClick={handleAddKdv}
+              className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium text-violet-600 border border-violet-200 rounded-md hover:bg-violet-50 transition-colors"
+              title="KDV tutarını tahsilat olarak ekle"
+            >
+              <Percent className="w-3 h-3" />
+              KDV Ekle
+            </button>
+            <button
+              onClick={handleRoundTotal}
+              className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium text-amber-600 border border-amber-200 rounded-md hover:bg-amber-50 transition-colors"
+              title="Kalan tutarı yuvarla"
+            >
+              <Receipt className="w-3 h-3" />
+              Yuvarla
+            </button>
+            <button
+              onClick={handleDeferRemaining}
+              className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium text-slate-600 border border-slate-200 rounded-md hover:bg-slate-50 transition-colors"
+              title="Kalan borcu sonraya aktar"
+            >
+              <Square className="w-3 h-3" />
+              Sonra Ödeyecek
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Alt: Tablo + Form yan yana */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
         {/* Payment history table */}
-        <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden min-h-[280px]">
+        <div className="lg:col-span-8 bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden min-h-[280px]">
           <div className="px-4 py-3 border-b border-slate-100">
             <h3 className="font-bold text-slate-800 text-sm">Vezne İşlemleri</h3>
           </div>
@@ -189,122 +255,65 @@ export function VezneTransactions({ protocol }: VezneTransactionsProps) {
           </div>
         </div>
 
-        {/* Summary + payment form side by side */}
-        <div className="lg:col-span-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex flex-col">
-            <h3 className="font-bold text-slate-800 text-sm mb-3 flex items-center gap-2">
-              <Receipt className="w-4 h-4 text-blue-500" />
-              Vezne Bilgisi
-            </h3>
-            <div className="space-y-1.5 text-xs">
-              <div className="flex justify-between text-slate-600">
-                <span>Toplam KDV:</span>
-                <span className="font-medium text-slate-800">₺{totalKdv.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-slate-600">
-                <span>Toplam Tutar:</span>
-                <span className="font-medium text-slate-800">₺{totalAmount.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-slate-600">
-                <span>T. Ödenen:</span>
-                <span className="font-medium text-emerald-600">₺{totalPaid.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-slate-600">
-                <span>T. İndirim:</span>
-                <span className="font-medium text-amber-600">₺{totalDiscount.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between pt-2 border-t border-slate-100 text-slate-800 font-bold">
-                <span>Toplam Kalan:</span>
-                <span className={remaining <= 0 ? 'text-emerald-600' : 'text-red-600'}>
-                  {remaining < 0 ? `Fazla: +₺${Math.abs(remaining).toFixed(2)}` : `₺${remaining.toFixed(2)}`}
-                </span>
+        {/* Tahsilat formu */}
+        <form onSubmit={handleSubmit} className="lg:col-span-4 bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex flex-col">
+          <h3 className="font-bold text-slate-800 text-sm mb-3">Tahsilat İşlemi</h3>
+          <div className="space-y-2.5">
+            <div>
+              <span className="block text-xs font-medium text-slate-700 mb-1.5">Ödeme Tipi</span>
+              <div className="grid grid-cols-2 gap-1.5">
+                {paymentTypes.map((type) => {
+                  const Icon = paymentTypeIcons[type]
+                  const selected = form.paymentType === type
+                  return (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => setForm({ ...form, paymentType: type })}
+                      className={`flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium rounded-lg border-2 transition-colors text-left ${
+                        selected
+                          ? paymentTypeBadges[type]
+                          : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-300'
+                      }`}
+                    >
+                      <Icon className={`w-3.5 h-3.5 ${selected ? '' : 'text-slate-400'}`} />
+                      <span className="flex-1 truncate">{type}</span>
+                    </button>
+                  )
+                })}
               </div>
             </div>
-            <div className="flex flex-col gap-2 mt-auto pt-3">
-              <button
-                onClick={handleAddKdv}
-                className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium text-violet-600 border border-violet-200 rounded-lg hover:bg-violet-50"
-              >
-                <Percent className="w-3.5 h-3.5" />
-                KDV Ekle
-              </button>
-              <button
-                onClick={handleRoundTotal}
-                className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium text-amber-600 border border-amber-200 rounded-lg hover:bg-amber-50"
-              >
-                <Receipt className="w-3.5 h-3.5" />
-                Fiyatı Yuvarla
-              </button>
-              <button
-                onClick={handleDeferRemaining}
-                className="w-full flex items-center justify-start gap-2 py-1.5 px-2.5 text-xs font-medium text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50"
-              >
-                <Square className="w-3.5 h-3.5" />
-                Kalan Borcu Sonra Ödeyecek
-              </button>
+            <div>
+              <label className="block text-xs font-medium text-slate-700 mb-1">Tutar</label>
+              <input
+                type="number"
+                value={form.amount}
+                onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                placeholder="0.00"
+                step="0.01"
+                min="0"
+                required
+                className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white"
+              />
             </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-700 mb-1">Açıklama</label>
+              <textarea
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                rows={2}
+                className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white resize-none"
+              />
+            </div>
+            <button
+              type="submit"
+              className="w-full flex items-center justify-center gap-1.5 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <Save className="w-3.5 h-3.5" />
+              Kaydet
+            </button>
           </div>
-
-          <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex flex-col">
-            <h3 className="font-bold text-slate-800 text-sm mb-3">Tahsilat İşlemi</h3>
-            <div className="space-y-2.5">
-              <div>
-                <span className="block text-xs font-medium text-slate-700 mb-1.5">Ödeme Tipi</span>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {paymentTypes.map((type) => {
-                    const Icon = paymentTypeIcons[type]
-                    const selected = form.paymentType === type
-                    return (
-                      <button
-                        key={type}
-                        type="button"
-                        onClick={() => setForm({ ...form, paymentType: type })}
-                        className={`flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium rounded-lg border-2 transition-colors text-left ${
-                          selected
-                            ? paymentTypeBadges[type]
-                            : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-300'
-                        }`}
-                      >
-                        <Icon className={`w-3.5 h-3.5 ${selected ? '' : 'text-slate-400'}`} />
-                        <span className="flex-1 truncate">{type}</span>
-                        {selected ? <CheckSquare className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5 text-slate-300" />}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">Tutar</label>
-                <input
-                  type="number"
-                  value={form.amount}
-                  onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                  placeholder="0.00"
-                  step="0.01"
-                  min="0"
-                  required
-                  className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">Açıklama</label>
-                <textarea
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  rows={2}
-                  className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white resize-none"
-                />
-              </div>
-              <button
-                type="submit"
-                className="w-full flex items-center justify-center gap-1.5 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                <Save className="w-3.5 h-3.5" />
-                Kaydet
-              </button>
-            </div>
-          </form>
-        </div>
+        </form>
       </div>
     </div>
   )

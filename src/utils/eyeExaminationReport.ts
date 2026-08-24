@@ -420,18 +420,78 @@ export async function openEyeExaminationPdf(report: ReportData, existingDoc?: im
     }
 
     // Visual acuity block (göz şemasının iç tarafına doğru)
-    const acuity = eyeData.visualAcuity?.trim() || '-'
+    // "0" değeri girilmemiş sayılır — gösterilmez
+    const isMeaningful = (v: string) => {
+      const t = v.trim()
+      return t !== '' && t !== '0' && t !== '0/0' && t !== '0.0'
+    }
+    const acuityBare = isMeaningful(eyeData.visualAcuity ?? '') ? eyeData.visualAcuity!.trim() : ''
+    const acuityGlasses = isMeaningful(eyeData.visualAcuityWithGlasses ?? '') ? eyeData.visualAcuityWithGlasses!.trim() : ''
     const metricX = mirror ? x + cardW / 2 - 12 : x + cardW / 2 + 12
 
-    doc.setFont('Roboto', 'bold')
-    doc.setFontSize(19)
-    doc.setTextColor(...dark)
-    doc.text(acuity, metricX, y + 20, { align: 'center' })
+    if (acuityBare && acuityGlasses) {
+      // İkisi de girilmiş — iki satır halinde göster
+      doc.setFont('Roboto', 'bold')
+      doc.setFontSize(5.5)
+      doc.setTextColor(...gray)
+      doc.text('GÖZLÜKSÜZ', metricX, y + 14.5, { align: 'center' })
+      doc.setFont('Roboto', 'bold')
+      doc.setFontSize(13)
+      doc.setTextColor(...dark)
+      doc.text(acuityBare, metricX, y + 20, { align: 'center' })
 
-    doc.setFont('Roboto', 'normal')
-    doc.setFontSize(6.5)
-    doc.setTextColor(...gray)
-    doc.text('GÖRME KESKİNLİĞİ', metricX, y + 24.5, { align: 'center' })
+      doc.setFont('Roboto', 'bold')
+      doc.setFontSize(5.5)
+      doc.setTextColor(...cardColor)
+      doc.text('GÖZLÜK/LENS', metricX, y + 24.5, { align: 'center' })
+      doc.setFont('Roboto', 'bold')
+      doc.setFontSize(13)
+      doc.setTextColor(...cardColor)
+      doc.text(acuityGlasses, metricX, y + 29.5, { align: 'center' })
+    } else if (acuityGlasses) {
+      // Sadece gözlüklü/lensli girilmiş — çıplak göz gösterilmez
+      doc.setFont('Roboto', 'bold')
+      doc.setFontSize(6.5)
+      doc.setTextColor(...cardColor)
+      doc.text('GÖZLÜK/LENS', metricX, y + 15.5, { align: 'center' })
+
+      doc.setFont('Roboto', 'bold')
+      doc.setFontSize(19)
+      doc.setTextColor(...dark)
+      doc.text(acuityGlasses, metricX, y + 22, { align: 'center' })
+
+      doc.setFont('Roboto', 'normal')
+      doc.setFontSize(6.5)
+      doc.setTextColor(...gray)
+      doc.text('GÖRME KESKİNLİĞİ', metricX, y + 26.5, { align: 'center' })
+    } else if (acuityBare) {
+      // Sadece çıplak göz girilmiş
+      doc.setFont('Roboto', 'bold')
+      doc.setFontSize(6.5)
+      doc.setTextColor(...gray)
+      doc.text('GÖZLÜKSÜZ', metricX, y + 15.5, { align: 'center' })
+
+      doc.setFont('Roboto', 'bold')
+      doc.setFontSize(19)
+      doc.setTextColor(...dark)
+      doc.text(acuityBare, metricX, y + 22, { align: 'center' })
+
+      doc.setFont('Roboto', 'normal')
+      doc.setFontSize(6.5)
+      doc.setTextColor(...gray)
+      doc.text('GÖRME KESKİNLİĞİ', metricX, y + 26.5, { align: 'center' })
+    } else {
+      // Hiç değer girilmemiş
+      doc.setFont('Roboto', 'bold')
+      doc.setFontSize(19)
+      doc.setTextColor(...gray)
+      doc.text('-', metricX, y + 20, { align: 'center' })
+
+      doc.setFont('Roboto', 'normal')
+      doc.setFontSize(6.5)
+      doc.setTextColor(...gray)
+      doc.text('GÖRME KESKİNLİĞİ', metricX, y + 24.5, { align: 'center' })
+    }
 
     // Divider
     doc.setDrawColor(...border)
@@ -442,14 +502,14 @@ export async function openEyeExaminationPdf(report: ReportData, existingDoc?: im
     const isEshel = data.examinationMode === 'eshel'
     const params: { l: string; v: string }[] = isEshel
       ? [
-          { l: 'GÖZLÜKLÜ', v: eyeData.visualAcuityWithGlasses },
+          { l: 'GÖZLÜK/LENS', v: eyeData.visualAcuityWithGlasses },
           { l: 'TANSİYON', v: eyeData.eyePressure },
         ]
       : [
           { l: 'SPH', v: eyeData.sph },
           { l: 'CYL', v: eyeData.cyl },
           { l: 'AX', v: eyeData.ax },
-          { l: 'GÖZLÜKLÜ', v: eyeData.visualAcuityWithGlasses },
+          { l: 'GÖZLÜK/LENS', v: eyeData.visualAcuityWithGlasses },
           { l: 'TANSİYON', v: eyeData.eyePressure },
         ]
 

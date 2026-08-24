@@ -3,40 +3,29 @@ import { CheckCircle, ClipboardList, Eraser, MessageSquare, Plus, Save, Trash2, 
 import { Modal } from '../../components/ui/Modal'
 import { useAuth } from '../../context/AuthContext'
 import type { ProtocolService, EyeExaminationData } from '../../types'
-
-const TEMPLATE_STORAGE_KEY = 'cetka-eye-templates'
-
-type TemplateCategory = 'evaluation' | 'diagnosis' | 'resultText'
-
-interface Template {
-  id: string
-  category: TemplateCategory
-  text: string
-}
-
-function loadTemplates(): Template[] {
-  try {
-    const raw = localStorage.getItem(TEMPLATE_STORAGE_KEY)
-    if (raw) return JSON.parse(raw) as Template[]
-  } catch {
-    // ignore
-  }
-  return []
-}
-
-function saveTemplates(templates: Template[]): void {
-  localStorage.setItem(TEMPLATE_STORAGE_KEY, JSON.stringify(templates))
-}
+import {
+  type EyeTemplate as Template,
+  type EyeTemplateCategory as TemplateCategory,
+  loadEyeTemplates as loadTemplates,
+  saveEyeTemplates as saveTemplates,
+} from '../../utils/eyeTemplates'
 
 interface EyeExaminationModalProps {
   isOpen: boolean
   onClose: () => void
   service: ProtocolService | null
+  patientName?: string
+  patientTc?: string
+  patientBirthDate?: string
+  patientGender?: string
+  company?: string
+  protocolNo?: string
+  examType?: string
   onSave: (data: string, resultText: string, approve?: boolean) => void
 }
 
 const defaultData: EyeExaminationData = {
-  examinationMode: 'otorefraktometre',
+  examinationMode: 'eshel',
   rightEye: { sph: '', cyl: '', ax: '', visualAcuity: '', visualAcuityWithGlasses: '', eyePressure: '' },
   leftEye: { sph: '', cyl: '', ax: '', visualAcuity: '', visualAcuityWithGlasses: '', eyePressure: '' },
   colorBlindness: 'Yoktur',
@@ -58,8 +47,8 @@ const EYE_FIELDS: { key: keyof EyeExaminationData['rightEye']; label: string; pl
   { key: 'sph', label: 'Sph.' },
   { key: 'cyl', label: 'Cyl.' },
   { key: 'ax', label: 'Ax.' },
-  { key: 'visualAcuity', label: 'Görme Keskinliği', placeholder: 'örn. 1.0' },
-  { key: 'visualAcuityWithGlasses', label: 'Keskinlik (Gözlüklü/Lensli)', placeholder: 'örn. 1.0' },
+  { key: 'visualAcuity', label: 'Gözlüksüz', placeholder: 'örn. 1.0' },
+  { key: 'visualAcuityWithGlasses', label: 'Gözlük/Lens', placeholder: 'örn. 1.0' },
   { key: 'eyePressure', label: 'Göz Tansiyonu (mmHg)', placeholder: 'örn. 14' },
 ]
 
@@ -497,7 +486,7 @@ function generateShortComment(data: EyeExaminationData): string {
   return parts.join('. ') + '.'
 }
 
-export function EyeExaminationModal({ isOpen, onClose, service, onSave }: EyeExaminationModalProps) {
+export function EyeExaminationModal({ isOpen, onClose, service, patientName, patientTc, patientBirthDate, patientGender, company, protocolNo, examType, onSave }: EyeExaminationModalProps) {
   const [data, setData] = useState<EyeExaminationData>({ ...defaultData })
   const { canApproveEyeExamination } = useAuth()
   const [templates, setTemplates] = useState<Template[]>(loadTemplates)
@@ -510,6 +499,7 @@ export function EyeExaminationModal({ isOpen, onClose, service, onSave }: EyeExa
   useEffect(() => {
     if (isOpen && service) {
       setData(parseEyeExaminationData(service))
+      setTemplates(loadTemplates()) // ayarlar sayfasından eklenenleri yükle
       setOpenPopover(null)
       setNewTemplateText('')
       setShowExtraFindings(false)
@@ -645,29 +635,79 @@ export function EyeExaminationModal({ isOpen, onClose, service, onSave }: EyeExa
 
   const renderEyeBox = (side: 'rightEye' | 'leftEye', title: string, themeColor: string, bgColor: string) => {
     const isEshel = data.examinationMode === 'eshel'
-    // Eshel modunda sadece görme keskinliği alanları gösterilir
-    const visibleFields = isEshel
-      ? EYE_FIELDS.filter((f) => f.key === 'visualAcuity' || f.key === 'visualAcuityWithGlasses')
-      : EYE_FIELDS
+    // Refraksiyon alanları (Sph, Cyl, Ax) — sadece otorefraktometre modunda
+    const refractionFields = EYE_FIELDS.filter((f) => f.key === 'sph' || f.key === 'cyl' || f.key === 'ax')
+    // Göz tansiyonu — sadece otorefraktometre modunda
+    const pressureField = EYE_FIELDS.find((f) => f.key === 'eyePressure')
+
+    const renderField = (field: { key: keyof EyeExaminationData['rightEye']; label: string; placeholder?: string }) => (
+      <div key={field.key}>
+        <label className="block text-[9px] font-medium text-slate-500 mb-0.5 truncate" title={field.label}>{field.label}</label>
+        <input
+          value={data[side][field.key]}
+          onChange={(e) => updateEyeField(side, field.key, e.target.value)}
+          placeholder={field.placeholder}
+          className="w-full px-1.5 py-1 bg-white border border-slate-200 rounded-md text-[11px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20"
+        />
+      </div>
+    )
+
     return (
     <div className={`rounded-xl border p-2 ${bgColor}`}>
       <div className="flex items-center gap-1.5 mb-1.5">
         <div className={`w-2 h-2 rounded-full ${themeColor}`} />
         <h3 className="text-xs font-bold text-slate-700">{title}</h3>
       </div>
-      <div className={`grid gap-1.5 ${isEshel ? 'grid-cols-2' : 'grid-cols-3'}`}>
-        {visibleFields.map((field) => (
-          <div key={field.key}>
-            <label className="block text-[9px] font-medium text-slate-500 mb-0.5 truncate" title={field.label}>{field.label}</label>
+
+      {/* Refraksiyon bölümü — sadece otorefraktometre modunda */}
+      {!isEshel && refractionFields.length > 0 && (
+        <div className="mb-2">
+          <div className="text-[8px] font-bold text-slate-400 uppercase tracking-wider mb-1 px-0.5">Refraksiyon</div>
+          <div className="grid grid-cols-3 gap-1.5">
+            {refractionFields.map(renderField)}
+          </div>
+        </div>
+      )}
+
+      {/* Görme Keskinliği bölümü — vurgulu kart */}
+      <div className={`rounded-lg p-1.5 ${isEshel ? '' : 'bg-white/60 border border-slate-200'}`}>
+        <div className="text-[8px] font-bold text-slate-500 uppercase tracking-wider mb-1 px-0.5 flex items-center gap-1">
+          <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+          Görme Keskinliği
+        </div>
+        <div className="grid grid-cols-2 gap-1.5">
+          {/* Görme Keskinliği — çıplak */}
+          <div className="rounded-md bg-slate-50 border border-slate-200 p-1">
+            <label className="block text-[8px] font-semibold text-slate-500 mb-0.5">Gözlüksüz</label>
             <input
-              value={data[side][field.key]}
-              onChange={(e) => updateEyeField(side, field.key, e.target.value)}
-              placeholder={field.placeholder}
+              value={data[side].visualAcuity}
+              onChange={(e) => updateEyeField(side, 'visualAcuity', e.target.value)}
+              placeholder="örn. 1.0"
               className="w-full px-1.5 py-1 bg-white border border-slate-200 rounded-md text-[11px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20"
             />
           </div>
-        ))}
+          {/* Keskinlik — Gözlüklü/Lensli */}
+          <div className="rounded-md bg-blue-50/60 border border-blue-200 p-1">
+            <label className="block text-[8px] font-semibold text-blue-600 mb-0.5">Gözlük / Lens</label>
+            <input
+              value={data[side].visualAcuityWithGlasses}
+              onChange={(e) => updateEyeField(side, 'visualAcuityWithGlasses', e.target.value)}
+              placeholder="örn. 1.0"
+              className="w-full px-1.5 py-1 bg-white border border-blue-200 rounded-md text-[11px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20"
+            />
+          </div>
+        </div>
       </div>
+
+      {/* Göz Tansiyonu — sadece otorefraktometre modunda */}
+      {!isEshel && pressureField && (
+        <div className="mt-2">
+          {renderField(pressureField)}
+        </div>
+      )}
     </div>
     )
   }
@@ -819,6 +859,85 @@ export function EyeExaminationModal({ isOpen, onClose, service, onSave }: EyeExa
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Göz Muayenesi" size="2xl">
       <div className="space-y-3">
+        {/* Hasta Bilgi Çubuğu */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-lg bg-slate-50 border border-slate-200 px-3 py-2 text-xs">
+          <div className="flex items-center gap-1.5">
+            <svg className="w-4 h-4 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+            <span className="font-semibold text-slate-800">{patientName ?? '-'}</span>
+          </div>
+          {patientTc && (
+            <div className="flex items-center gap-1 text-slate-600">
+              <span className="text-slate-400">TC:</span>
+              <span>{patientTc}</span>
+            </div>
+          )}
+          {patientBirthDate && (
+            <div className="flex items-center gap-1 text-slate-600">
+              <span className="text-slate-400">Doğum:</span>
+              <span>{new Date(patientBirthDate).toLocaleDateString('tr-TR')}</span>
+            </div>
+          )}
+          {patientGender && (
+            <div className="flex items-center gap-1 text-slate-600">
+              <span className="text-slate-400">Cinsiyet:</span>
+              <span>{patientGender}</span>
+            </div>
+          )}
+          {company && (
+            <div className="flex items-center gap-1 text-slate-600">
+              <svg className="w-3.5 h-3.5 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0H5m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1" />
+              </svg>
+              <span>{company}</span>
+            </div>
+          )}
+          {protocolNo && (
+            <div className="flex items-center gap-1 text-slate-600">
+              <span className="text-slate-400">Protokol:</span>
+              <span className="font-medium text-slate-700">{protocolNo}</span>
+            </div>
+          )}
+          {examType && (
+            <div className="flex items-center gap-1 text-slate-600">
+              <span className="text-slate-400">Tür:</span>
+              <span>{examType}</span>
+            </div>
+          )}
+          {service?.barcode && (
+            <div className="flex items-center gap-1 text-slate-600">
+              <span className="text-slate-400">Barkod:</span>
+              <span className="font-mono font-medium text-slate-700">{service.barcode}</span>
+            </div>
+          )}
+          {service?.processDate && (
+            <div className="flex items-center gap-1 text-slate-600">
+              <span className="text-slate-400">Tarih:</span>
+              <span>{new Date(service.processDate).toLocaleDateString('tr-TR')}</span>
+            </div>
+          )}
+          {/* Temizle / Normal butonları — bilgi çubuğunun sağında */}
+          <div className="flex items-center gap-1.5 ml-auto">
+            <button
+              type="button"
+              onClick={handleClear}
+              className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium text-slate-600 hover:text-red-600 border border-slate-200 rounded-md hover:bg-red-50 transition-colors"
+            >
+              <Eraser className="w-3 h-3" />
+              Temizle
+            </button>
+            <button
+              type="button"
+              onClick={handleFillNormal}
+              className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium text-slate-600 hover:text-emerald-600 border border-slate-200 rounded-md hover:bg-emerald-50 transition-colors"
+            >
+              <CheckCircle className="w-3 h-3" />
+              Normal
+            </button>
+          </div>
+        </div>
+
         {/* Göz Parametreleri + Muayene Türü ortada */}
         <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-2 items-stretch">
           {renderEyeBox('leftEye', 'Sol Göz', 'bg-blue-400', 'bg-blue-50 border-blue-100')}
@@ -966,8 +1085,8 @@ export function EyeExaminationModal({ isOpen, onClose, service, onSave }: EyeExa
 
         {/* Değerlendirme / Tanı */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {renderTextareaWithTemplates('Değerlendirme', 'evaluation', data.evaluation, (v) => setData((p) => ({ ...p, evaluation: v })))}
-          {renderTextareaWithTemplates('Tanı', 'diagnosis', data.diagnosis, (v) => setData((p) => ({ ...p, diagnosis: v })))}
+          {renderTextareaWithTemplates('Değerlendirme', 'evaluation', data.evaluation, (v) => setData((p) => ({ ...p, evaluation: v })), 1)}
+          {renderTextareaWithTemplates('Tanı', 'diagnosis', data.diagnosis, (v) => setData((p) => ({ ...p, diagnosis: v })), 1)}
         </div>
 
         {/* Sonuç Yorumu */}
@@ -1007,7 +1126,7 @@ export function EyeExaminationModal({ isOpen, onClose, service, onSave }: EyeExa
           <textarea
             value={data.resultText}
             onChange={(e) => setData((p) => ({ ...p, resultText: e.target.value }))}
-            rows={8}
+            rows={3}
             className="w-full px-3 py-2 text-xs leading-relaxed border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y"
             placeholder="Sonuç yorumu..."
           />
@@ -1101,25 +1220,7 @@ export function EyeExaminationModal({ isOpen, onClose, service, onSave }: EyeExa
         </div>
 
         {/* Footer Actions */}
-        <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={handleClear}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-red-600 border border-slate-200 rounded-lg hover:bg-slate-50"
-            >
-              <Eraser className="w-3.5 h-3.5" />
-              Temizle
-            </button>
-            <button
-              type="button"
-              onClick={handleFillNormal}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-emerald-600 border border-slate-200 rounded-lg hover:bg-emerald-50"
-            >
-              <CheckCircle className="w-3.5 h-3.5" />
-              Normal
-            </button>
-          </div>
+        <div className="flex items-center justify-end pt-2 border-t border-slate-100">
           <div className="flex gap-2">
             <button
               onClick={onClose}

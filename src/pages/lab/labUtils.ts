@@ -1,4 +1,4 @@
-export const statusOptions = ['Tümü', 'Barkod Verildi', 'Numune Bekliyor', 'Numune Kabul', 'Sonuç Bekleniyor', 'Sonuç Girildi', 'Onaylandı']
+export const statusOptions = ['Tümü', 'Barkod Verildi', 'İşlem Bekliyor', 'Numune Kabul', 'Sonuç Bekleniyor', 'Sonuç Girildi', 'Onaylandı']
 
 export interface ServiceMeta {
   unit: string
@@ -69,19 +69,39 @@ export function getLabName(group: string): string {
 export function statusColor(status: string) {
   switch (status) {
     case 'Onaylandı':
-      return 'bg-emerald-100 text-emerald-700 border-emerald-200'
+      return 'bg-emerald-50 text-emerald-700 border-emerald-300'
     case 'Sonuç Girildi':
-      return 'bg-blue-100 text-blue-700 border-blue-200'
+      return 'bg-sky-50 text-sky-700 border-sky-300'
     case 'Numune Kabul':
-      return 'bg-amber-100 text-amber-700 border-amber-200'
-    case 'Numune Bekliyor':
-      return 'bg-slate-100 text-slate-600 border-slate-200'
+      return 'bg-amber-50 text-amber-700 border-amber-300'
+    case 'İşlem Bekliyor':
+      return 'bg-slate-50 text-slate-500 border-slate-300'
     case 'Barkod Verildi':
-      return 'bg-violet-100 text-violet-700 border-violet-200'
+      return 'bg-violet-50 text-violet-700 border-violet-300'
     case 'Sonuç Bekleniyor':
-      return 'bg-rose-100 text-rose-700 border-rose-200'
+      return 'bg-rose-50 text-rose-700 border-rose-300'
     default:
-      return 'bg-slate-100 text-slate-600 border-slate-200'
+      return 'bg-slate-50 text-slate-500 border-slate-300'
+  }
+}
+
+// Durum rozeti için ikon bilgisi — her duruma uygun nokta/renk
+export function statusDot(status: string): string {
+  switch (status) {
+    case 'Onaylandı':
+      return 'bg-emerald-500'
+    case 'Sonuç Girildi':
+      return 'bg-sky-500'
+    case 'Numune Kabul':
+      return 'bg-amber-500'
+    case 'İşlem Bekliyor':
+      return 'bg-slate-400'
+    case 'Barkod Verildi':
+      return 'bg-violet-500'
+    case 'Sonuç Bekleniyor':
+      return 'bg-rose-500'
+    default:
+      return 'bg-slate-400'
   }
 }
 

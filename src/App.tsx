@@ -15,6 +15,7 @@ import { Lab } from './pages/lab/Lab'
 import { Laboratory } from './pages/lab/Laboratory'
 import { QuickApproval } from './pages/definitions/QuickApproval'
 import { ExternalLabSend } from './pages/external-labs/ExternalLabSend'
+import { ExternalLabSendNew } from './pages/external-labs/ExternalLabSendNew'
 import { ExternalLabTrack } from './pages/external-labs/ExternalLabTrack'
 import { NredReasons } from './pages/definitions/NredReasons'
 import { NewPatient } from './pages/patients/NewPatient'
@@ -27,10 +28,10 @@ import { ProtocolDetail } from './pages/protocols/ProtocolDetail'
 import { ServiceDefinitions } from './pages/services/ServiceDefinitions'
 import { Settings } from './pages/settings/Settings'
 import { SmsSettings } from './pages/settings/SmsSettings'
+import { EyeExamTemplates } from './pages/settings/EyeExamTemplates'
 import { Doctors } from './pages/doctors/Doctors'
 import { Stats } from './pages/stats/Stats'
 import { Users } from './pages/users/Users'
-import { ServiceUnits } from './pages/definitions/ServiceUnits'
 import { ServiceTubeTypes } from './pages/definitions/ServiceTubeTypes'
 import { OSGBDefinitions } from './pages/definitions/OSGBDefinitions'
 import { ExamTypeDefinitions } from './pages/exam-types/ExamTypeDefinitions'
@@ -91,6 +92,7 @@ function AppContent() {
         <Route path="laboratuvar/laboratuvar" element={<Laboratory />} />
         <Route path="laboratuvar/hizli-onay" element={<QuickApproval />} />
         <Route path="laboratuvar/dis-lab-gonderim" element={<ExternalLabSend />} />
+        <Route path="laboratuvar/dis-lab-gonderim/yeni" element={<ExternalLabSendNew />} />
         <Route path="laboratuvar/dis-lab-izlem" element={<ExternalLabTrack />} />
         <Route path="laboratuvar/nred-nedenleri" element={<NredReasons />} />
         <Route path="muhasebe" element={<Navigate to="/muhasebe/kasa-raporu" replace />} />
@@ -102,8 +104,8 @@ function AppContent() {
         <Route path="istatistikler" element={<Stats />} />
         <Route path="ayarlar" element={<Settings />} />
         <Route path="ayarlar/sms" element={<SmsSettings />} />
+        <Route path="ayarlar/goz-muayenesi-sablonlari" element={<EyeExamTemplates />} />
         <Route path="ayarlar/doktorlar" element={<Doctors />} />
-        <Route path="ayarlar/hizmet-birimleri" element={<ServiceUnits />} />
         <Route path="ayarlar/hizmet-tup-tipleri" element={<ServiceTubeTypes />} />
         <Route path="ayarlar/hizmetler" element={<ServiceDefinitions />} />
         <Route path="ayarlar/paketler" element={<PackageDefinitions />} />

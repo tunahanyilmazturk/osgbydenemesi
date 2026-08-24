@@ -2,8 +2,8 @@
 import { ArrowDownUp, Plus, Search, Tag, Trash2 } from 'lucide-react'
 import type { Company, CompanyService } from '../../../context/CompaniesContext'
 import { useConfirm } from '../../../context/ConfirmContext'
-import { getGroupColor, type ServiceGroup } from '../../../context/ServicesContext'
-import type { ServiceCatalogItem } from '../../../types'
+import { getGroupColor } from '../../../context/ServicesContext'
+import type { ServiceCatalogItem, ServiceGroup } from '../../../types'
 
 interface CompanyServicesProps {
   form: Omit<Company, 'id'>

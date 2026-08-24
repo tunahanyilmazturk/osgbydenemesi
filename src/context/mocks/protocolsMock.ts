@@ -1,0 +1,282 @@
+import type { Protocol } from '../../types'
+import { today, yesterday, daysAgo, Y } from './dateHelpers'
+
+export const allProtocols: Protocol[] = [
+  // Protokol 1 — Ahmet Yılmaz — Tamamlandı (tüm testler onaylandı, sonuçlar girilmiş)
+  {
+    id: 1,
+    patientId: 1,
+    protocolNo: `${Y}000001`,
+    protocolDate: `${yesterday()}T09:15`,
+    status: 'Tamamlandı',
+    company: 'ABC İnşaat',
+    examType: 'İşe Giriş',
+    department: 'İnşaat',
+    occupation: 'Mühendis',
+    description: 'Periyodik kontrol',
+    services: [
+      { id: 101, protocolId: 1, code: 1011, name: 'Tam Kan Sayımı (Hemogram - CBC)', group: 'Hematoloji', status: 'Onaylandı', barcode: '920001', processDate: `${yesterday()}T09:20`, price: 50, vatRate: 0, totalPrice: 50, recordedBy: 'Dr. Ayşe Kaya', result: 'Normal sınırlarda', resultText: 'Normal Sınırlarda', acceptDate: `${yesterday()}T09:30`, approvedBy: 'Dr. Ayşe Kaya', approvedAt: `${yesterday()}T10:15` },
+      { id: 102, protocolId: 1, code: 1003, name: 'GLİKOZ (AKS / Açlık Kan Şekeri)', group: 'Biyokimya', status: 'Onaylandı', barcode: '920002', processDate: `${yesterday()}T09:25`, price: 30, vatRate: 0, totalPrice: 30, recordedBy: 'Dr. Ayşe Kaya', result: '92', resultText: 'Normal Sınırlarda', oldResult: '88', acceptDate: `${yesterday()}T09:30`, approvedBy: 'Dr. Ayşe Kaya', approvedAt: `${yesterday()}T10:15` },
+      { id: 103, protocolId: 1, code: 1009, name: 'PA Akciğer Grafisi (Posteroanterior)', group: 'Radyoloji', status: 'Onaylandı', barcode: '920003', processDate: `${yesterday()}T09:30`, price: 120, vatRate: 0, totalPrice: 120, recordedBy: 'Dr. Ayşe Kaya', result: 'Normal sınırlarda', resultText: 'Normal Sınırlarda', acceptDate: `${yesterday()}T09:35`, approvedBy: 'Dr. Ayşe Kaya', approvedAt: `${yesterday()}T10:20` },
+      { id: 104, protocolId: 1, code: 1002, name: 'EKG (Elektrokardiyografi)', group: 'Radyoloji', status: 'Onaylandı', barcode: '920004', processDate: `${yesterday()}T09:35`, price: 80, vatRate: 0, totalPrice: 80, recordedBy: 'Dr. Ayşe Kaya', result: 'Normal sınırlarda', resultText: 'Normal Sınırlarda', acceptDate: `${yesterday()}T09:40`, approvedBy: 'Dr. Ayşe Kaya', approvedAt: `${yesterday()}T10:20` },
+    ],
+    payments: [
+      { id: 201, protocolId: 1, paymentDate: `${yesterday()}T09:40`, paymentType: 'Nakit', amount: 100, description: 'Kapora', recordedBy: 'Vezne' },
+      { id: 202, protocolId: 1, paymentDate: `${yesterday()}T09:45`, paymentType: 'Nakit', amount: 180, description: 'Kalan ödeme', recordedBy: 'Vezne' },
+    ],
+  },
+  // Protokol 2 — Mehmet Kaya — Tamamlandı
+  {
+    id: 2,
+    patientId: 2,
+    protocolNo: `${Y}000002`,
+    protocolDate: `${yesterday()}T10:30`,
+    status: 'Tamamlandı',
+    company: 'XYZ Lojistik',
+    examType: 'Periyodik',
+    department: 'Lojistik',
+    occupation: 'Şoför',
+    description: 'Yıllık periyodik muayene',
+    services: [
+      { id: 105, protocolId: 2, code: 1011, name: 'Tam Kan Sayımı (Hemogram - CBC)', group: 'Hematoloji', status: 'Onaylandı', barcode: '920005', processDate: `${yesterday()}T10:35`, price: 40, vatRate: 0, totalPrice: 40, recordedBy: 'Dr. Mehmet Demir', result: 'Normal sınırlarda', resultText: 'Normal Sınırlarda', acceptDate: `${yesterday()}T10:45`, approvedBy: 'Dr. Mehmet Demir', approvedAt: `${yesterday()}T11:30` },
+      { id: 106, protocolId: 2, code: 1007, name: 'KAN GRUBU (ABO ve Rh)', group: 'Hematoloji', status: 'Onaylandı', barcode: '920006', processDate: `${yesterday()}T10:40`, price: 25, vatRate: 0, totalPrice: 25, recordedBy: 'Dr. Mehmet Demir', result: 'A Rh+', resultText: 'A Rh+', acceptDate: `${yesterday()}T10:45`, approvedBy: 'Dr. Mehmet Demir', approvedAt: `${yesterday()}T11:30` },
+      { id: 107, protocolId: 2, code: 1012, name: 'KREATİNİN (Serum)', group: 'Biyokimya', status: 'Onaylandı', barcode: '920007', processDate: `${yesterday()}T10:45`, price: 35, vatRate: 0, totalPrice: 35, recordedBy: 'Dr. Mehmet Demir', result: '1.0', resultText: 'Normal Sınırlarda', acceptDate: `${yesterday()}T10:50`, approvedBy: 'Dr. Mehmet Demir', approvedAt: `${yesterday()}T11:30` },
+    ],
+    payments: [
+      { id: 203, protocolId: 2, paymentDate: `${yesterday()}T10:45`, paymentType: 'Kart', amount: 100, description: 'Tam ödeme', recordedBy: 'Vezne' },
+    ],
+  },
+  // Protokol 3 — Ayşe Demir — Sonuç Bekleniyor (numune kabul edildi, dış lab'a gönderildi)
+  {
+    id: 3,
+    patientId: 3,
+    protocolNo: `${Y}000003`,
+    protocolDate: `${yesterday()}T11:00`,
+    status: 'Bekliyor',
+    company: 'MNO Tekstil',
+    examType: 'İşe Dönüş',
+    department: 'Üretim',
+    occupation: 'Operatör',
+    description: 'İşe dönüş kontrolü',
+    services: [
+      { id: 108, protocolId: 3, code: 1011, name: 'Tam Kan Sayımı (Hemogram - CBC)', group: 'Hematoloji', status: 'Sonuç Bekleniyor', barcode: '920008', processDate: `${yesterday()}T11:05`, price: 45, vatRate: 0, totalPrice: 45, recordedBy: 'Dr. Ayşe Kaya', acceptDate: `${yesterday()}T11:15`, lab: 'Dış Laboratuvar' },
+      { id: 109, protocolId: 3, code: 1003, name: 'GLİKOZ (AKS / Açlık Kan Şekeri)', group: 'Biyokimya', status: 'Sonuç Bekleniyor', barcode: '920009', processDate: `${yesterday()}T11:10`, price: 25, vatRate: 0, totalPrice: 25, recordedBy: 'Dr. Ayşe Kaya', acceptDate: `${yesterday()}T11:15`, lab: 'Dış Laboratuvar' },
+      { id: 110, protocolId: 3, code: 1009, name: 'PA Akciğer Grafisi (Posteroanterior)', group: 'Radyoloji', status: 'Sonuç Bekleniyor', barcode: '920010', processDate: `${yesterday()}T11:15`, price: 100, vatRate: 0, totalPrice: 100, recordedBy: 'Dr. Ayşe Kaya', acceptDate: `${yesterday()}T11:20`, lab: 'CETKA Görüntüleme' },
+      { id: 111, protocolId: 3, code: 1002, name: 'EKG (Elektrokardiyografi)', group: 'Radyoloji', status: 'Sonuç Bekleniyor', barcode: '920011', processDate: `${yesterday()}T11:20`, price: 70, vatRate: 0, totalPrice: 70, recordedBy: 'Dr. Ayşe Kaya', acceptDate: `${yesterday()}T11:25`, lab: 'CETKA Görüntüleme' },
+      { id: 112, protocolId: 3, code: 1006, name: 'İşitme Testi (Odyometri)', group: 'Odyometri', status: 'Sonuç Bekleniyor', barcode: '920012', processDate: `${yesterday()}T11:25`, price: 60, vatRate: 0, totalPrice: 60, recordedBy: 'Dr. Ayşe Kaya', acceptDate: `${yesterday()}T11:30`, lab: 'CETKA Görüntüleme', note: 'Hasta gürültülü ortamda çalışıyor, odyometri dikkatli yapılmalı.' },
+      { id: 113, protocolId: 3, code: 1004, name: 'Göz Taraması (Otorefraktometre)', group: 'Odyometri', status: 'Sonuç Bekleniyor', barcode: '920013', processDate: `${yesterday()}T11:30`, price: 50, vatRate: 0, totalPrice: 50, recordedBy: 'Dr. Ayşe Kaya', acceptDate: `${yesterday()}T11:35`, lab: 'CETKA Görüntüleme' },
+    ],
+    payments: [
+      { id: 204, protocolId: 3, paymentDate: `${yesterday()}T11:35`, paymentType: 'Kurumu Fatura', amount: 0, description: 'Faturaya eklenecek', recordedBy: 'Vezne' },
+    ],
+  },
+  // Protokol 4 — Fatma Şahin — İşlem Bekliyor (yeni kayıt, barkod verildi)
+  {
+    id: 4,
+    patientId: 4,
+    protocolNo: `${Y}000004`,
+    protocolDate: `${today()}T09:00`,
+    status: 'Bekliyor',
+    company: 'ABC İnşaat',
+    examType: 'İşe Giriş',
+    department: 'İnşaat',
+    occupation: 'Formen',
+    description: 'Yeni işe giriş',
+    services: [
+      { id: 114, protocolId: 4, code: 1011, name: 'Tam Kan Sayımı (Hemogram - CBC)', group: 'Hematoloji', status: 'Barkod Verildi', barcode: '920014', processDate: `${today()}T09:05`, price: 50, vatRate: 0, totalPrice: 50, recordedBy: 'Dr. Ayşe Kaya' },
+      { id: 115, protocolId: 4, code: 1003, name: 'GLİKOZ (AKS / Açlık Kan Şekeri)', group: 'Biyokimya', status: 'Barkod Verildi', barcode: '920015', processDate: `${today()}T09:10`, price: 30, vatRate: 0, totalPrice: 30, recordedBy: 'Dr. Ayşe Kaya' },
+      { id: 116, protocolId: 4, code: 1009, name: 'PA Akciğer Grafisi (Posteroanterior)', group: 'Radyoloji', status: 'İşlem Bekliyor', barcode: '920016', processDate: `${today()}T09:15`, price: 120, vatRate: 0, totalPrice: 120, recordedBy: 'Dr. Ayşe Kaya' },
+    ],
+    payments: [
+      { id: 205, protocolId: 4, paymentDate: `${today()}T09:20`, paymentType: 'Nakit', amount: 100, description: 'Kapora', recordedBy: 'Vezne' },
+    ],
+  },
+  // Protokol 5 — Hasan Çelik — Sonuç Girildi (sonuçlar girildi, onay bekliyor)
+  {
+    id: 5,
+    patientId: 5,
+    protocolNo: `${Y}000005`,
+    protocolDate: `${today()}T10:00`,
+    status: 'Bekliyor',
+    company: 'XYZ Lojistik',
+    examType: 'Periyodik',
+    department: 'Lojistik',
+    occupation: 'Depo Görevlisi',
+    description: 'Periyodik muayene',
+    services: [
+      { id: 117, protocolId: 5, code: 1011, name: 'Tam Kan Sayımı (Hemogram - CBC)', group: 'Hematoloji', status: 'Sonuç Girildi', barcode: '920017', processDate: `${today()}T10:05`, price: 40, vatRate: 0, totalPrice: 40, recordedBy: 'Dr. Mehmet Demir', result: 'Normal sınırlarda', resultText: 'Normal Sınırlarda', acceptDate: `${today()}T10:15` },
+      { id: 118, protocolId: 5, code: 1007, name: 'KAN GRUBU (ABO ve Rh)', group: 'Hematoloji', status: 'Sonuç Girildi', barcode: '920018', processDate: `${today()}T10:10`, price: 25, vatRate: 0, totalPrice: 25, recordedBy: 'Dr. Mehmet Demir', result: 'B Rh+', resultText: 'B Rh+', acceptDate: `${today()}T10:15` },
+      { id: 119, protocolId: 5, code: 1012, name: 'KREATİNİN (Serum)', group: 'Biyokimya', status: 'Sonuç Girildi', barcode: '920019', processDate: `${today()}T10:15`, price: 35, vatRate: 0, totalPrice: 35, recordedBy: 'Dr. Mehmet Demir', result: '1.2', resultText: 'Normal Sınırlarda', acceptDate: `${today()}T10:20` },
+      { id: 120, protocolId: 5, code: 1013, name: 'ALT (SGPT - Alanin Aminotransferaz)', group: 'Biyokimya', status: 'Sonuç Girildi', barcode: '920020', processDate: `${today()}T10:20`, price: 30, vatRate: 0, totalPrice: 30, recordedBy: 'Dr. Mehmet Demir', result: '55', resultText: 'Yüksek', acceptDate: `${today()}T10:25`, note: 'ALT değeri yüksek, hastaya bilgi verildi. Kontrol testi önerildi.' },
+    ],
+    payments: [],
+  },
+  // Protokol 6 — Zeynep Kılıç — İşlem Bekliyor
+  {
+    id: 6,
+    patientId: 6,
+    protocolNo: `${Y}000006`,
+    protocolDate: `${today()}T11:00`,
+    status: 'Bekliyor',
+    company: 'DEF Danışmanlık',
+    examType: 'İş Değişikliği',
+    department: 'Ofis',
+    occupation: 'Danışman',
+    description: 'İş değişikliği muayenesi',
+    services: [
+      { id: 121, protocolId: 6, code: 1011, name: 'Tam Kan Sayımı (Hemogram - CBC)', group: 'Hematoloji', status: 'İşlem Bekliyor', barcode: '920021', processDate: `${today()}T11:05`, price: 50, vatRate: 0, totalPrice: 50, recordedBy: 'Dr. Ayşe Kaya' },
+      { id: 122, protocolId: 6, code: 1002, name: 'EKG (Elektrokardiyografi)', group: 'Radyoloji', status: 'İşlem Bekliyor', barcode: '920022', processDate: `${today()}T11:10`, price: 80, vatRate: 0, totalPrice: 80, recordedBy: 'Dr. Ayşe Kaya' },
+    ],
+    payments: [
+      { id: 206, protocolId: 6, paymentDate: `${today()}T11:15`, paymentType: 'Nakit', amount: 60, description: 'Kapora', recordedBy: 'Vezne' },
+    ],
+  },
+  // Protokol 7 — Ahmet Yılmaz — Tamamlandı (eski protokol, odyometri onaylı)
+  {
+    id: 7,
+    patientId: 1,
+    protocolNo: `${Y}000007`,
+    protocolDate: `${today()}T12:00`,
+    status: 'Tamamlandı',
+    company: 'ABC İnşaat',
+    examType: 'Periyodik',
+    department: 'İnşaat',
+    occupation: 'Mühendis',
+    description: 'Periyodik kontrol',
+    services: [
+      { id: 123, protocolId: 7, code: 1009, name: 'PA Akciğer Grafisi (Posteroanterior)', group: 'Radyoloji', status: 'Onaylandı', barcode: '920023', processDate: `${today()}T12:05`, price: 120, vatRate: 0, totalPrice: 120, recordedBy: 'Dr. Ayşe Kaya', result: 'Normal sınırlarda', resultText: 'Normal Sınırlarda', acceptDate: `${today()}T12:15`, approvedBy: 'Dr. Ayşe Kaya', approvedAt: `${today()}T12:45` },
+    ],
+    payments: [
+      { id: 207, protocolId: 7, paymentDate: `${today()}T12:10`, paymentType: 'Kart', amount: 120, description: 'Tam ödeme', recordedBy: 'Vezne' },
+    ],
+  },
+  // Protokol 8 — Mustafa Arslan — Numune Kabul (kabul edildi, sonuç bekleniyor)
+  {
+    id: 8,
+    patientId: 7,
+    protocolNo: `${Y}000008`,
+    protocolDate: `${today()}T12:30`,
+    status: 'Bekliyor',
+    company: 'ABC İnşaat',
+    examType: 'Periyodik',
+    department: 'İnşaat',
+    occupation: 'İşçi',
+    description: 'Periyodik muayene',
+    services: [
+      { id: 124, protocolId: 8, code: 1011, name: 'Tam Kan Sayımı (Hemogram - CBC)', group: 'Hematoloji', status: 'Numune Kabul', barcode: '920024', processDate: `${today()}T12:35`, price: 45, vatRate: 0, totalPrice: 45, recordedBy: 'Dr. Ayşe Kaya', acceptDate: `${today()}T12:45` },
+      { id: 125, protocolId: 8, code: 1003, name: 'GLİKOZ (AKS / Açlık Kan Şekeri)', group: 'Biyokimya', status: 'Numune Kabul', barcode: '920025', processDate: `${today()}T12:40`, price: 25, vatRate: 0, totalPrice: 25, recordedBy: 'Dr. Ayşe Kaya', acceptDate: `${today()}T12:45` },
+      { id: 126, protocolId: 8, code: 1015, name: 'KOLESTEROL (Total)', group: 'Biyokimya', status: 'Numune Kabul', barcode: '920026', processDate: `${today()}T12:45`, price: 30, vatRate: 0, totalPrice: 30, recordedBy: 'Dr. Ayşe Kaya', acceptDate: `${today()}T12:50` },
+      { id: 127, protocolId: 8, code: 1018, name: 'TRİGLİSERİD', group: 'Biyokimya', status: 'Numune Kabul', barcode: '920027', processDate: `${today()}T12:50`, price: 30, vatRate: 0, totalPrice: 30, recordedBy: 'Dr. Ayşe Kaya', acceptDate: `${today()}T12:55` },
+    ],
+    payments: [
+      { id: 208, protocolId: 8, paymentDate: `${today()}T12:55`, paymentType: 'Kurumu Fatura', amount: 0, description: 'Firmaya fatura', recordedBy: 'Vezne' },
+    ],
+  },
+  // Protokol 9 — Emine Yıldız — İşlem Bekliyor (yeni kayıt)
+  {
+    id: 9,
+    patientId: 8,
+    protocolNo: `${Y}000009`,
+    protocolDate: `${today()}T13:00`,
+    status: 'Bekliyor',
+    company: 'MNO Tekstil',
+    examType: 'İşe Giriş',
+    department: 'Üretim',
+    occupation: 'Kalite Kontrol',
+    description: 'Yeni işe giriş muayenesi',
+    services: [
+      { id: 128, protocolId: 9, code: 1011, name: 'Tam Kan Sayımı (Hemogram - CBC)', group: 'Hematoloji', status: 'İşlem Bekliyor', barcode: '920028', processDate: `${today()}T13:05`, price: 50, vatRate: 0, totalPrice: 50, recordedBy: 'Dr. Mehmet Demir' },
+      { id: 129, protocolId: 9, code: 1003, name: 'GLİKOZ (AKS / Açlık Kan Şekeri)', group: 'Biyokimya', status: 'İşlem Bekliyor', barcode: '920029', processDate: `${today()}T13:10`, price: 30, vatRate: 0, totalPrice: 30, recordedBy: 'Dr. Mehmet Demir' },
+      { id: 130, protocolId: 9, code: 1006, name: 'İşitme Testi (Odyometri)', group: 'Odyometri', status: 'İşlem Bekliyor', barcode: '920030', processDate: `${today()}T13:15`, price: 60, vatRate: 0, totalPrice: 60, recordedBy: 'Dr. Mehmet Demir' },
+      { id: 131, protocolId: 9, code: 1025, name: 'Solunum Fonksiyon Testi (SFT / Spirometri)', group: 'Odyometri', status: 'İşlem Bekliyor', barcode: '920031', processDate: `${today()}T13:20`, price: 70, vatRate: 0, totalPrice: 70, recordedBy: 'Dr. Mehmet Demir' },
+    ],
+    payments: [
+      { id: 209, protocolId: 9, paymentDate: `${today()}T13:25`, paymentType: 'Nakit', amount: 80, description: 'Kapora', recordedBy: 'Vezne' },
+    ],
+  },
+  // Protokol 10 — Osman Doğan — Tamamlandı (2 gün önce, tümü onaylı)
+  {
+    id: 10,
+    patientId: 9,
+    protocolNo: `${Y}000010`,
+    protocolDate: `${daysAgo(2)}T13:00`,
+    status: 'Tamamlandı',
+    company: 'XYZ Lojistik',
+    examType: 'Periyodik',
+    department: 'Lojistik',
+    occupation: 'Depo Sorumlusu',
+    description: 'Yıllık periyodik muayene',
+    services: [
+      { id: 132, protocolId: 10, code: 1011, name: 'Tam Kan Sayımı (Hemogram - CBC)', group: 'Hematoloji', status: 'Onaylandı', barcode: '920032', processDate: `${daysAgo(2)}T13:05`, price: 40, vatRate: 0, totalPrice: 40, recordedBy: 'Dr. Ayşe Kaya', result: 'Normal sınırlarda', resultText: 'Normal Sınırlarda', acceptDate: `${daysAgo(2)}T13:15`, approvedBy: 'Dr. Ayşe Kaya', approvedAt: `${daysAgo(2)}T14:00` },
+      { id: 133, protocolId: 10, code: 1012, name: 'KREATİNİN (Serum)', group: 'Biyokimya', status: 'Onaylandı', barcode: '920033', processDate: `${daysAgo(2)}T13:10`, price: 35, vatRate: 0, totalPrice: 35, recordedBy: 'Dr. Ayşe Kaya', result: '0.9', resultText: 'Normal Sınırlarda', acceptDate: `${daysAgo(2)}T13:15`, approvedBy: 'Dr. Ayşe Kaya', approvedAt: `${daysAgo(2)}T14:00` },
+      { id: 134, protocolId: 10, code: 1013, name: 'ALT (SGPT - Alanin Aminotransferaz)', group: 'Biyokimya', status: 'Onaylandı', barcode: '920034', processDate: `${daysAgo(2)}T13:15`, price: 30, vatRate: 0, totalPrice: 30, recordedBy: 'Dr. Ayşe Kaya', result: '28', resultText: 'Normal Sınırlarda', acceptDate: `${daysAgo(2)}T13:20`, approvedBy: 'Dr. Ayşe Kaya', approvedAt: `${daysAgo(2)}T14:00` },
+      { id: 135, protocolId: 10, code: 1015, name: 'KOLESTEROL (Total)', group: 'Biyokimya', status: 'Onaylandı', barcode: '920035', processDate: `${daysAgo(2)}T13:20`, price: 30, vatRate: 0, totalPrice: 30, recordedBy: 'Dr. Ayşe Kaya', result: '185', resultText: 'Normal Sınırlarda', acceptDate: `${daysAgo(2)}T13:25`, approvedBy: 'Dr. Ayşe Kaya', approvedAt: `${daysAgo(2)}T14:00` },
+      { id: 136, protocolId: 10, code: 1018, name: 'TRİGLİSERİD', group: 'Biyokimya', status: 'Onaylandı', barcode: '920036', processDate: `${daysAgo(2)}T13:25`, price: 30, vatRate: 0, totalPrice: 30, recordedBy: 'Dr. Ayşe Kaya', result: '145', resultText: 'Normal Sınırlarda', acceptDate: `${daysAgo(2)}T13:30`, approvedBy: 'Dr. Ayşe Kaya', approvedAt: `${daysAgo(2)}T14:00` },
+    ],
+    payments: [
+      { id: 210, protocolId: 10, paymentDate: `${daysAgo(2)}T13:30`, paymentType: 'Kart', amount: 165, description: 'Tam ödeme', recordedBy: 'Vezne' },
+    ],
+  },
+  // Protokol 11 — Hatice Aksoy — Sonuç Bekleniyor (dış lab'a gönderildi, not var)
+  {
+    id: 11,
+    patientId: 10,
+    protocolNo: `${Y}000011`,
+    protocolDate: `${daysAgo(2)}T13:30`,
+    status: 'Bekliyor',
+    company: 'DEF Danışmanlık',
+    examType: 'İşe Dönüş',
+    department: 'Ofis',
+    occupation: 'Uzman',
+    description: 'İşe dönüş kontrolü',
+    services: [
+      { id: 137, protocolId: 11, code: 1011, name: 'Tam Kan Sayımı (Hemogram - CBC)', group: 'Hematoloji', status: 'Sonuç Bekleniyor', barcode: '920037', processDate: `${daysAgo(2)}T13:35`, price: 45, vatRate: 0, totalPrice: 45, recordedBy: 'Dr. Mehmet Demir', acceptDate: `${daysAgo(2)}T13:45`, lab: 'Dış Laboratuvar' },
+      { id: 138, protocolId: 11, code: 1005, name: 'HbA1c (Glikozille Hemoglobin)', group: 'Biyokimya', status: 'Sonuç Bekleniyor', barcode: '920038', processDate: `${daysAgo(2)}T13:40`, price: 50, vatRate: 0, totalPrice: 50, recordedBy: 'Dr. Mehmet Demir', acceptDate: `${daysAgo(2)}T13:45`, lab: 'Dış Laboratuvar', note: 'Hasta diyabetik, HbA1c sonucu acil.' },
+      { id: 139, protocolId: 11, code: 1002, name: 'EKG (Elektrokardiyografi)', group: 'Radyoloji', status: 'Sonuç Bekleniyor', barcode: '920039', processDate: `${daysAgo(2)}T13:45`, price: 70, vatRate: 0, totalPrice: 70, recordedBy: 'Dr. Mehmet Demir', acceptDate: `${daysAgo(2)}T13:50`, lab: 'CETKA Görüntüleme' },
+    ],
+    payments: [
+      { id: 211, protocolId: 11, paymentDate: `${daysAgo(2)}T13:50`, paymentType: 'Kurumu Fatura', amount: 0, description: 'Firmaya fatura', recordedBy: 'Vezne' },
+    ],
+  },
+  // Protokol 12 — Ali Çetin — Tamamlandı (3 gün önce, odyometri + göz taraması onaylı)
+  {
+    id: 12,
+    patientId: 11,
+    protocolNo: `${Y}000012`,
+    protocolDate: `${daysAgo(3)}T14:00`,
+    status: 'Tamamlandı',
+    company: 'ABC İnşaat',
+    examType: 'Periyodik',
+    department: 'İnşaat',
+    occupation: 'İnşaat İşçisi',
+    description: 'Periyodik muayene — gürültülü ortam',
+    services: [
+      { id: 140, protocolId: 12, code: 1011, name: 'Tam Kan Sayımı (Hemogram - CBC)', group: 'Hematoloji', status: 'Onaylandı', barcode: '920040', processDate: `${daysAgo(3)}T14:05`, price: 40, vatRate: 0, totalPrice: 40, recordedBy: 'Dr. Ayşe Kaya', result: 'Normal sınırlarda', resultText: 'Normal Sınırlarda', acceptDate: `${daysAgo(3)}T14:15`, approvedBy: 'Dr. Ayşe Kaya', approvedAt: `${daysAgo(3)}T15:00` },
+      { id: 141, protocolId: 12, code: 1006, name: 'İşitme Testi (Odyometri)', group: 'Odyometri', status: 'Onaylandı', barcode: '920041', processDate: `${daysAgo(3)}T14:10`, price: 60, vatRate: 0, totalPrice: 60, recordedBy: 'Dr. Ayşe Kaya', result: '15', resultText: 'Normal Sınırlarda', acceptDate: `${daysAgo(3)}T14:20`, approvedBy: 'Dr. Ayşe Kaya', approvedAt: `${daysAgo(3)}T15:00` },
+      { id: 142, protocolId: 12, code: 1025, name: 'Solunum Fonksiyon Testi (SFT / Spirometri)', group: 'Odyometri', status: 'Onaylandı', barcode: '920042', processDate: `${daysAgo(3)}T14:15`, price: 70, vatRate: 0, totalPrice: 70, recordedBy: 'Dr. Ayşe Kaya', result: '95', resultText: 'Normal Sınırlarda', acceptDate: `${daysAgo(3)}T14:25`, approvedBy: 'Dr. Ayşe Kaya', approvedAt: `${daysAgo(3)}T15:00` },
+      { id: 143, protocolId: 12, code: 1009, name: 'PA Akciğer Grafisi (Posteroanterior)', group: 'Radyoloji', status: 'Onaylandı', barcode: '920043', processDate: `${daysAgo(3)}T14:20`, price: 100, vatRate: 0, totalPrice: 100, recordedBy: 'Dr. Ayşe Kaya', result: 'Normal sınırlarda', resultText: 'Normal Sınırlarda', acceptDate: `${daysAgo(3)}T14:30`, approvedBy: 'Dr. Ayşe Kaya', approvedAt: `${daysAgo(3)}T15:00` },
+    ],
+    payments: [
+      { id: 212, protocolId: 12, paymentDate: `${daysAgo(3)}T14:30`, paymentType: 'Nakit', amount: 270, description: 'Tam ödeme', recordedBy: 'Vezne' },
+    ],
+  },
+  // Protokol 13 — Sultan Koç — İşlem Bekliyor (3 gün önce)
+  {
+    id: 13,
+    patientId: 12,
+    protocolNo: `${Y}000013`,
+    protocolDate: `${daysAgo(3)}T14:30`,
+    status: 'Bekliyor',
+    company: 'MNO Tekstil',
+    examType: 'İş Değişikliği',
+    department: 'Üretim',
+    occupation: 'Kalite Kontrol',
+    description: 'İş değişikliği muayenesi',
+    services: [
+      { id: 144, protocolId: 13, code: 1011, name: 'Tam Kan Sayımı (Hemogram - CBC)', group: 'Hematoloji', status: 'Barkod Verildi', barcode: '920044', processDate: `${daysAgo(3)}T14:35`, price: 45, vatRate: 0, totalPrice: 45, recordedBy: 'Dr. Mehmet Demir' },
+      { id: 145, protocolId: 13, code: 1003, name: 'GLİKOZ (AKS / Açlık Kan Şekeri)', group: 'Biyokimya', status: 'Barkod Verildi', barcode: '920045', processDate: `${daysAgo(3)}T14:40`, price: 25, vatRate: 0, totalPrice: 25, recordedBy: 'Dr. Mehmet Demir' },
+      { id: 146, protocolId: 13, code: 1004, name: 'Göz Taraması (Otorefraktometre)', group: 'Odyometri', status: 'İşlem Bekliyor', barcode: '920046', processDate: `${daysAgo(3)}T14:45`, price: 50, vatRate: 0, totalPrice: 50, recordedBy: 'Dr. Mehmet Demir' },
+    ],
+    payments: [],
+  },
+]

@@ -41,7 +41,7 @@ function loadInstitutionName(): string {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  'Numune Bekliyor': '#f59e0b',
+  'İşlem Bekliyor': '#f59e0b',
   'Barkod Verildi': '#0ea5e9',
   'Numune Kabul': '#6366f1',
   'Sonuç Bekleniyor': '#f43f5e',
@@ -76,7 +76,7 @@ export function Dashboard() {
     const totalServices = protocols.reduce((s, p) => s + p.services.length, 0)
 
     const pendingResults = protocols.reduce(
-      (s, p) => s + p.services.filter((x) => x.status === 'Sonuç Bekleniyor' || x.status === 'Numune Bekliyor').length,
+      (s, p) => s + p.services.filter((x) => x.status === 'Sonuç Bekleniyor' || x.status === 'İşlem Bekliyor').length,
       0
     )
     const pendingApproval = protocols.reduce(

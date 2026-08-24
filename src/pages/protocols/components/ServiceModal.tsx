@@ -1,7 +1,9 @@
 ﻿import { useMemo } from 'react'
+import { User } from 'lucide-react'
 import { useProtocols } from '../../../context/ProtocolsContext'
 import { Modal } from '../../../components/ui/Modal'
 import { ServiceSelector } from './ServiceSelector'
+import type { CompanyService } from '../../../context/CompaniesContext'
 import type { PatientDetail, Protocol, ProtocolService } from '../../../types'
 
 interface ServiceModalProps {
@@ -9,17 +11,19 @@ interface ServiceModalProps {
   onClose: () => void
   patient: PatientDetail
   protocol: Protocol
+  companyServices?: CompanyService[]
   onAddService: (service: Omit<ProtocolService, 'id' | 'protocolId' | 'barcode' | 'totalPrice'>) => void
   onRemoveService: (serviceId: number) => void
 }
 
-export function ServiceModal({ isOpen, onClose, patient, protocol, onAddService, onRemoveService }: ServiceModalProps) {
+export function ServiceModal({ isOpen, onClose, patient, protocol, companyServices, onAddService, onRemoveService }: ServiceModalProps) {
   const { updateServiceInProtocol } = useProtocols()
 
   const selectedServices = useMemo(
     () =>
       protocol.services.map((s) => ({
         id: s.id,
+        code: s.code,
         name: s.name,
         group: s.group,
         price: s.price,
@@ -36,10 +40,33 @@ export function ServiceModal({ isOpen, onClose, patient, protocol, onAddService,
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={patient.name} size="xl">
-      <div className="h-[75vh]">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Hizmet Ekle"
+      subtitle={
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
+            <User className="w-3.5 h-3.5 text-blue-600" />
+          </div>
+          <span className="text-xs font-bold text-slate-800 truncate">{patient.name}</span>
+          <span className="text-[10px] text-slate-400 truncate hidden sm:inline">
+            {protocol.company} — {protocol.protocolNo}
+          </span>
+          <span className="px-1.5 py-0.5 text-[9px] font-medium bg-slate-100 text-slate-600 rounded shrink-0">
+            {protocol.examType}
+          </span>
+          <span className="px-1.5 py-0.5 text-[9px] font-bold bg-blue-600 text-white rounded shrink-0">
+            {protocol.services.length} hizmet
+          </span>
+        </div>
+      }
+      size="2xl"
+    >
+      <div className="h-[520px]">
         <ServiceSelector
           company={protocol.company}
+          companyServices={companyServices}
           selectedServices={selectedServices}
           onAddService={onAddService}
           onRemoveService={onRemoveService}

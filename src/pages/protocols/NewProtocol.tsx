@@ -70,6 +70,7 @@ export function NewProtocol() {
 
   const [selectedServices, setSelectedServices] = useState<Array<{
     id: number
+    code: number
     name: string
     group: string
     price: number
@@ -155,6 +156,7 @@ export function NewProtocol() {
     })
     selectedServices.forEach((s) => {
       addServiceToProtocol(newProtocolId, {
+        code: s.code,
         name: s.name,
         group: s.group,
         status: s.status,
