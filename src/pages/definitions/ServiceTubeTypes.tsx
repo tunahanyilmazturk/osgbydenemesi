@@ -7,9 +7,11 @@ import { Input } from '../../components/ui/Input'
 import { Modal } from '../../components/ui/Modal'
 import { PageHeader } from '../../components/PageHeader'
 import type { ServiceTubeType } from '../../types'
+import { getTubeBarcodeShortName } from '../../utils/barcodeSettings'
 
 const emptyForm: Omit<ServiceTubeType, 'id'> = {
   name: '',
+  barcodeShortName: '',
   colorCode: '#3b82f6',
   description: '',
   isActive: true,
@@ -43,7 +45,7 @@ export function ServiceTubeTypes() {
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase()
     if (!term) return tubeTypes
-    return tubeTypes.filter((t) => t.name.toLowerCase().includes(term) || t.description.toLowerCase().includes(term))
+    return tubeTypes.filter((t) => t.name.toLowerCase().includes(term) || t.barcodeShortName?.toLowerCase().includes(term) || t.description.toLowerCase().includes(term))
   }, [tubeTypes, search])
 
   const openAdd = () => {
@@ -66,6 +68,7 @@ export function ServiceTubeTypes() {
   const openEdit = (item: ServiceTubeType) => {
     setForm({
       name: item.name,
+      barcodeShortName: item.barcodeShortName ?? getTubeBarcodeShortName(item.name),
       colorCode: item.colorCode,
       description: item.description,
       isActive: item.isActive,
@@ -163,6 +166,7 @@ export function ServiceTubeTypes() {
               <tr>
                 <th className="px-6 py-4 font-medium w-16 text-center">#</th>
                 <th className="px-6 py-4 font-medium">Tüp Tipi</th>
+                <th className="px-6 py-4 font-medium">Barkodda Kısa Ad</th>
                 <th className="px-6 py-4 font-medium">Açıklama</th>
                 <th className="px-6 py-4 font-medium text-center">Durum</th>
                 <th className="px-6 py-4 font-medium text-right">İşlemler</th>
@@ -171,7 +175,7 @@ export function ServiceTubeTypes() {
             <tbody className="divide-y divide-slate-100">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
+                  <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
                     <div className="flex flex-col items-center">
                       <Search className="w-10 h-10 text-slate-300 mb-2" />
                       <p>Tüp tipi bulunamadı.</p>
@@ -190,6 +194,11 @@ export function ServiceTubeTypes() {
                         />
                         <span className="font-medium text-slate-800">{item.name}</span>
                       </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="inline-flex px-2 py-1 rounded-lg bg-blue-50 text-blue-700 text-xs font-medium" title="Barkodda kullanılacak kısa ad">
+                        {item.barcodeShortName || getTubeBarcodeShortName(item.name)}
+                      </span>
                     </td>
                     <td className="px-6 py-4 text-slate-500 text-xs max-w-xs truncate">{item.description || '—'}</td>
                     <td className="px-6 py-4 text-center">
@@ -256,6 +265,9 @@ export function ServiceTubeTypes() {
                   <p className="text-sm font-bold text-slate-800 truncate max-w-[160px]">
                     {form.name || 'Tüp Tipi Adı'}
                   </p>
+                  <p className="text-[10px] text-blue-600 font-medium mt-0.5">
+                    Barkod: {form.barcodeShortName || getTubeBarcodeShortName(form.name || 'Tüp Tipi')}
+                  </p>
                   <span
                     className={`inline-flex items-center px-2 py-0.5 mt-1 rounded-full text-[10px] font-medium border ${
                       form.isActive
@@ -279,6 +291,16 @@ export function ServiceTubeTypes() {
                 placeholder="Örn: Sarı Kapaklı Jel Separator Tüp (SST)"
                 required
               />
+
+              <Input
+                size="sm"
+                label="Barkodda Gözükecek Kısa Ad"
+                value={form.barcodeShortName ?? ''}
+                onChange={(e) => update('barcodeShortName', e.target.value)}
+                placeholder="Örn: SST Sarı"
+                maxLength={24}
+              />
+              <p className="text-[10px] text-slate-400 -mt-3">Barkodda test adının altında gösterilir. Boş bırakırsanız otomatik kısa ad kullanılır.</p>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1.5">Durum</label>

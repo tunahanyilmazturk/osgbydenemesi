@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import type { ServiceCatalogItem, ServiceGroup, ServicePackage, ServiceTubeType } from '../types'
 import { loadFromStorage, saveToStorage } from '../utils/storage'
+import { getTubeBarcodeShortName } from '../utils/barcodeSettings'
 
 const defaultGroups: ServiceGroup[] = [
   { id: 1, name: 'Biyokimya', color: 'blue', labIds: [3, 4], defaultTubeTypeId: 1 },
@@ -550,11 +551,18 @@ function normalizeGroups(items: ServiceGroup[]): ServiceGroup[] {
   }))
 }
 
+function normalizeTubeTypes(items: ServiceTubeType[]): ServiceTubeType[] {
+  return items.map((item) => ({
+    ...item,
+    barcodeShortName: item.barcodeShortName?.trim() || getTubeBarcodeShortName(item.name),
+  }))
+}
+
 export function ServicesProvider({ children }: { children: React.ReactNode }) {
   const [catalog, setCatalog] = useState<ServiceCatalogItem[]>(() => normalizeCatalog(loadFromStorage(CATALOG_KEY, defaultCatalog)))
   const [packages, setPackages] = useState<ServicePackage[]>(() => loadFromStorage(PACKAGES_KEY, defaultPackages))
   const [groups, setGroups] = useState<ServiceGroup[]>(() => normalizeGroups(loadFromStorage(GROUPS_KEY, defaultGroups)))
-  const [tubeTypes, setTubeTypes] = useState<ServiceTubeType[]>(() => loadFromStorage(TUBE_TYPES_KEY, defaultTubeTypes))
+  const [tubeTypes, setTubeTypes] = useState<ServiceTubeType[]>(() => normalizeTubeTypes(loadFromStorage(TUBE_TYPES_KEY, defaultTubeTypes)))
 
   useEffect(() => saveToStorage(CATALOG_KEY, catalog), [catalog])
   useEffect(() => saveToStorage(PACKAGES_KEY, packages), [packages])

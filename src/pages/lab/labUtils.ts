@@ -1,4 +1,4 @@
-export const statusOptions = ['Tümü', 'Barkod Verildi', 'İşlem Bekliyor', 'Numune Kabul', 'Sonuç Bekleniyor', 'Sonuç Girildi', 'Onaylandı']
+export const statusOptions = ['Tümü', 'Barkod Verildi', 'İşlem Bekliyor', 'Numune Kabul', 'Numune Red', 'Sonuç Bekleniyor', 'Sonuç Girildi', 'Onaylandı']
 
 export interface ServiceMeta {
   unit: string
@@ -74,6 +74,8 @@ export function statusColor(status: string) {
       return 'bg-sky-50 text-sky-700 border-sky-300'
     case 'Numune Kabul':
       return 'bg-amber-50 text-amber-700 border-amber-300'
+    case 'Numune Red':
+      return 'bg-red-50 text-red-700 border-red-300'
     case 'İşlem Bekliyor':
       return 'bg-slate-50 text-slate-500 border-slate-300'
     case 'Barkod Verildi':
@@ -94,6 +96,8 @@ export function statusDot(status: string): string {
       return 'bg-sky-500'
     case 'Numune Kabul':
       return 'bg-amber-500'
+    case 'Numune Red':
+      return 'bg-red-500'
     case 'İşlem Bekliyor':
       return 'bg-slate-400'
     case 'Barkod Verildi':

@@ -7,6 +7,7 @@ import { useCompanies } from '../../context/CompaniesContext'
 import { useExamTypes } from '../../context/ExamTypesContext'
 import { useServices } from '../../context/ServicesContext'
 import { useAuth } from '../../context/AuthContext'
+import { useConfirm } from '../../context/ConfirmContext'
 import { statusOptions } from '../../pages/lab/labUtils'
 import { defaultExternalLabs } from './mocks/externalLabsDefaults'
 import type { ExternalLab, ExternalLabSendRecord, PatientDetail, Protocol, ProtocolService } from '../../types'
@@ -92,6 +93,7 @@ const sendableStatuses = ['Barkod Verildi', 'İşlem Bekliyor', 'Numune Kabul', 
 
 export function ExternalLabSendNew() {
   const navigate = useNavigate()
+  const confirm = useConfirm()
   const { currentUser } = useAuth()
   const { patients } = usePatients()
   const { protocols, updateServiceInProtocol } = useProtocols()
@@ -131,10 +133,6 @@ export function ExternalLabSendNew() {
   const [allLabs, setAllLabs] = useState<ExternalLab[]>(loadLabs)
 
   useEffect(() => {
-    setAllLabs(loadLabs())
-  }, [activeTab])
-
-  useEffect(() => {
     const refreshLabs = () => setAllLabs(loadLabs())
     window.addEventListener('focus', refreshLabs)
     const interval = setInterval(refreshLabs, 1000)
@@ -144,22 +142,23 @@ export function ExternalLabSendNew() {
     }
   }, [])
 
-  useEffect(() => {
-    if (protocolDate === 'Bugün') {
+  const handleProtocolDateChange = (value: string) => {
+    setProtocolDate(value)
+    if (value === 'Bugün') {
       setStartDate(today())
       setEndDate(today())
-    } else if (protocolDate === 'Dün') {
-      const d = daysAgo(1)
-      setStartDate(d)
-      setEndDate(d)
-    } else if (protocolDate === 'Son 7 Gün') {
+    } else if (value === 'Dün') {
+      const date = daysAgo(1)
+      setStartDate(date)
+      setEndDate(date)
+    } else if (value === 'Son 7 Gün') {
       setStartDate(daysAgo(7))
       setEndDate(today())
-    } else if (protocolDate === 'Son 30 Gün') {
+    } else if (value === 'Son 30 Gün') {
       setStartDate(daysAgo(30))
       setEndDate(today())
     }
-  }, [protocolDate])
+  }
 
   const filteredProtocols = useMemo(() => {
     const start = new Date(`${startDate}T00:00:00`).getTime()
@@ -353,46 +352,22 @@ export function ExternalLabSendNew() {
     else if (activeTab === 'hizmet') setActiveTab('hasta')
   }
 
-  const activeLabs = useMemo(() => {
-    const all = allLabs.filter((l) => l.active)
-    if (selectedServiceDetails.length === 0) return all
+  const activeLabs = useMemo(() => allLabs.filter((lab) => lab.active), [allLabs])
 
-    // Seçilen hizmetlerin gruplarının labId kesişimini bul
-    const selectedGroupNames = new Set(selectedServiceDetails.map((r) => r.service.group))
-    const selectedGroupLabIds: number[][] = []
-    selectedGroupNames.forEach((name) => {
-      const group = groups.find((g) => g.name === name)
-      if (group?.labIds?.length) {
-        selectedGroupLabIds.push(group.labIds)
-      }
-    })
-
-    if (selectedGroupLabIds.length === 0) return all
-
-    const intersection = selectedGroupLabIds.reduce((acc, ids) =>
-      acc.filter((id) => ids.includes(id))
-    )
-    return all.filter((l) => intersection.includes(l.id))
-  }, [allLabs, groups, selectedServiceDetails])
-
-  // Seçili lab'ın ilgili gruplarını ve bu gruplara uyan hizmetleri belirle
   const validForSelectedLab = useMemo(() => {
     if (!selectedLabId) return []
-    return selectedServiceDetails.filter((r) => {
-      const group = groups.find((g) => g.name === r.service.group)
-      if (!group?.labIds?.length) return true
-      return group.labIds.includes(selectedLabId)
+    return selectedServiceDetails.filter((row) => {
+      const group = groups.find((item) => item.name === row.service.group)
+      return !group?.labIds?.length || group.labIds.includes(selectedLabId)
     })
   }, [groups, selectedLabId, selectedServiceDetails])
 
   const invalidForSelectedLab = useMemo(() => {
     if (!selectedLabId) return []
-    return selectedServiceDetails.filter((r) => !validForSelectedLab.some((v) => v.service.id === r.service.id))
+    return selectedServiceDetails.filter((row) => !validForSelectedLab.some((valid) => valid.service.id === row.service.id))
   }, [selectedLabId, selectedServiceDetails, validForSelectedLab])
 
-  const validPatientsInServices = useMemo(() => {
-    return new Set(validForSelectedLab.map((r) => r.patient.id))
-  }, [validForSelectedLab])
+  const validPatientsInServices = new Set(validForSelectedLab.map((r) => r.patient.id))
 
   // Seçili lab artık uygun değilse sıfırla
   useEffect(() => {
@@ -401,10 +376,21 @@ export function ExternalLabSendNew() {
     }
   }, [activeLabs, selectedLabId])
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!selectedLabId || validForSelectedLab.length === 0) return
     const lab = activeLabs.find((l) => l.id === selectedLabId)
     if (!lab) return
+
+    if (invalidForSelectedLab.length > 0) {
+      const confirmed = await confirm({
+        title: 'Kısmi Gönderim Uyarısı',
+        message: `${invalidForSelectedLab.length} seçili test bu laboratuvar için tanımlı değil. Yalnızca ${validForSelectedLab.length} uygun test gönderilecek; uygun olmayan testler mevcut durumlarında kalacak. Devam etmek istiyor musunuz?`,
+        confirmText: 'Uygun Testleri Gönder',
+        cancelText: 'İptal',
+        confirmVariant: 'primary',
+      })
+      if (!confirmed) return
+    }
 
     const services = validForSelectedLab.map((r) => ({
       serviceId: r.service.id,
@@ -561,7 +547,7 @@ export function ExternalLabSendNew() {
                 <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Protokol Tarihi</label>
                 <select
                   value={protocolDate}
-                  onChange={(e) => setProtocolDate(e.target.value)}
+                  onChange={(e) => handleProtocolDateChange(e.target.value)}
                   className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-700 focus:outline-none focus:border-blue-500"
                 >
                   {protocolDateOptions.map((o) => (

@@ -9,7 +9,7 @@
 - **Laboratuvar İşlemleri** — Sonuç işlemleri, hızlı onay, dış lab gönderim/izlem, barkod yazdırma
 - **Ön Muhasebe** — Kasa raporu, transfer, hareketler, borçlu hastalar, fatura icmal
 - **İstatistikler** — Gün sonu raporu
-- **Ayarlar** — Kurum bilgileri, SMS ayarları, doktor/hizmet/firma/OSGB tanımları, kullanıcı yönetimi
+- **Ayarlar** — Kurum bilgileri, SMS/barkod ayarları, doktor/hizmet/firma/OSGB tanımları, kullanıcı yönetimi, web sonuç kullanıcıları
 - **SMS Bildirim Sistemi** — Sonuç hazır olunca hastaya otomatik SMS (NetGSM/Mutlucell/İletimerkezi)
 
 ## Teknoloji
@@ -53,22 +53,24 @@ src/
 │   ├── Layout.tsx           # Sidebar + topbar + menü
 │   ├── Login.tsx            # Giriş sayfası
 │   └── ...
-├── context/                 # React Context providers
+├── context/                 # React Context providers ve başlangıç verileri
 │   ├── AuthContext.tsx      # Kullanıcı/rol/yetki
 │   ├── ProtocolsContext.tsx # Protokol/hizmet/ödeme
 │   ├── PatientsContext.tsx  # Hasta kayıtları
 │   ├── CompaniesContext.tsx # Firma tanımları
-│   ├── ServicesContext.tsx  # Hizmet katalog
+│   ├── ServicesContext.tsx  # Hizmet kataloğu
+│   ├── mocks/               # Hasta/protokol/web kullanıcı başlangıç verileri
 │   └── ...
 ├── pages/                   # Sayfalar (module-based)
 │   ├── dashboard/           # Ana Sayfa
 │   ├── patients/            # Hasta Kayıt
 │   ├── lab/                 # Laboratuvar (+ components/)
 │   ├── accounting/          # Muhasebe
+│   ├── external-labs/       # Dış laboratuvar (+ mocks/)
 │   ├── companies/           # Firma tanımları (+ components/)
 │   ├── settings/            # Kurum bilgileri + SMS ayarları
+│   ├── definitions/         # Tanım ve yönetim sayfaları
 │   └── ...
-├── data/                    # Mock/seed verileri
 ├── types/                   # TypeScript tip tanımları
 └── utils/                   # Yardımcı fonksiyonlar
     ├── sms.ts               # SMS gönderim + şablon + log
@@ -88,7 +90,10 @@ Tüm veriler `localStorage`'da saklanır (backend gerektirmez):
 | `cetka-companies` | Firma tanımları |
 | `cetka-services` | Hizmet katalog |
 | `cetka-users` | Kullanıcı/rol tanımları |
+| `cetka-web-result-users` | Web sonuç kullanıcıları ve erişim geçmişi |
 | `cetka-sms-log` | SMS gönderim logu |
+| `cetka-external-labs` | Dış laboratuvar tanımları |
+| `cetka-external-lab-sends` | Dış laboratuvar gönderim kayıtları |
 
 ## Demo Hesaplar
 

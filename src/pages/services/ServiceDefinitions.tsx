@@ -43,6 +43,11 @@ function loadExternalLabs(): ExternalLab[] {
 type SortField = 'code' | 'name' | 'group' | 'price' | 'vatRate' | 'total'
 type SortOrder = 'asc' | 'desc'
 
+function SortIcon({ field, activeField, activeOrder }: { field: SortField; activeField: SortField; activeOrder: SortOrder }) {
+  if (activeField !== field) return <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
+  return activeOrder === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-blue-600" /> : <ArrowDown className="w-3.5 h-3.5 text-blue-600" />
+}
+
 export function ServiceDefinitions() {
   const navigate = useNavigate()
   const { catalog, groups, tubeTypes, addCatalogItem, updateCatalogItem, removeCatalogItem, addGroup, updateGroup, removeGroup } = useServices()
@@ -258,11 +263,6 @@ export function ServiceDefinitions() {
     }
   }
 
-  const SortIcon = ({ field }: { field: SortField }) => {
-    if (sortBy !== field) return <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
-    return sortOrder === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-blue-600" /> : <ArrowDown className="w-3.5 h-3.5 text-blue-600" />
-  }
-
   const clearFilters = () => {
     setSearch('')
     setGroupFilter('Tümü')
@@ -466,37 +466,37 @@ export function ServiceDefinitions() {
                 <th className="px-6 py-3 font-medium w-24">
                   <button onClick={() => handleSort('code')} className="flex items-center gap-1.5 hover:text-slate-700">
                     Kod
-                    <SortIcon field="code" />
+                    <SortIcon activeField={sortBy} activeOrder={sortOrder} field="code" />
                   </button>
                 </th>
                 <th className="px-6 py-3 font-medium">
                   <button onClick={() => handleSort('name')} className="flex items-center gap-1.5 hover:text-slate-700">
                     Hizmet Adı
-                    <SortIcon field="name" />
+                    <SortIcon activeField={sortBy} activeOrder={sortOrder} field="name" />
                   </button>
                 </th>
                 <th className="px-6 py-3 font-medium">
                   <button onClick={() => handleSort('group')} className="flex items-center gap-1.5 hover:text-slate-700">
                     Grup
-                    <SortIcon field="group" />
+                    <SortIcon activeField={sortBy} activeOrder={sortOrder} field="group" />
                   </button>
                 </th>
                 <th className="px-6 py-3 font-medium text-right">
                   <button onClick={() => handleSort('price')} className="flex items-center justify-end gap-1.5 hover:text-slate-700 w-full">
                     Fiyat
-                    <SortIcon field="price" />
+                    <SortIcon activeField={sortBy} activeOrder={sortOrder} field="price" />
                   </button>
                 </th>
                 <th className="px-6 py-3 font-medium text-right">
                   <button onClick={() => handleSort('vatRate')} className="flex items-center justify-end gap-1.5 hover:text-slate-700 w-full">
                     KDV
-                    <SortIcon field="vatRate" />
+                    <SortIcon activeField={sortBy} activeOrder={sortOrder} field="vatRate" />
                   </button>
                 </th>
                 <th className="px-6 py-3 font-medium text-right">
                   <button onClick={() => handleSort('total')} className="flex items-center justify-end gap-1.5 hover:text-slate-700 w-full">
                     KDV Dahil
-                    <SortIcon field="total" />
+                    <SortIcon activeField={sortBy} activeOrder={sortOrder} field="total" />
                   </button>
                 </th>
                 <th className="px-6 py-3 font-medium text-center">Durum</th>

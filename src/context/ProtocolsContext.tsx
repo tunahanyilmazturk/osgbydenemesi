@@ -2,6 +2,7 @@
 import { allProtocols } from './mocks/protocolsMock'
 import type { Protocol, ProtocolPayment, ProtocolService } from '../types'
 import { loadFromStorage, saveToStorage } from '../utils/storage'
+import { formatBarcode, loadBarcodeSettings } from '../utils/barcodeSettings'
 
 interface ProtocolsContextType {
   protocols: Protocol[]
@@ -36,8 +37,11 @@ function generateProtocolNo() {
 }
 
 function generateBarcode() {
+  const settings = loadBarcodeSettings()
+  const configuredStart = Math.max(0, settings.startNumber - 1)
+  serviceCounter = Math.max(serviceCounter, configuredStart)
   serviceCounter += 1
-  return `92${serviceCounter.toString().padStart(4, '0')}`
+  return formatBarcode(serviceCounter, settings)
 }
 
 function calculateTotal(price: number, vatRate: number) {

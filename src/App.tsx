@@ -28,6 +28,7 @@ import { ProtocolDetail } from './pages/protocols/ProtocolDetail'
 import { ServiceDefinitions } from './pages/services/ServiceDefinitions'
 import { Settings } from './pages/settings/Settings'
 import { SmsSettings } from './pages/settings/SmsSettings'
+import { BarcodeSettings } from './pages/settings/BarcodeSettings'
 import { EyeExamTemplates } from './pages/settings/EyeExamTemplates'
 import { Doctors } from './pages/doctors/Doctors'
 import { Stats } from './pages/stats/Stats'
@@ -104,6 +105,7 @@ function AppContent() {
         <Route path="istatistikler" element={<Stats />} />
         <Route path="ayarlar" element={<Settings />} />
         <Route path="ayarlar/sms" element={<SmsSettings />} />
+        <Route path="ayarlar/barkod" element={<BarcodeSettings />} />
         <Route path="ayarlar/goz-muayenesi-sablonlari" element={<EyeExamTemplates />} />
         <Route path="ayarlar/doktorlar" element={<Doctors />} />
         <Route path="ayarlar/hizmet-tup-tipleri" element={<ServiceTubeTypes />} />

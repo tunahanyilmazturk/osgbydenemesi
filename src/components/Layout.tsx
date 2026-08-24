@@ -100,6 +100,7 @@ const staticMenuItems: MenuItem[] = [
     children: [
       { path: '/ayarlar', label: 'Kurum Bilgileri' },
       { path: '/ayarlar/sms', label: 'SMS Ayarları' },
+      { path: '/ayarlar/barkod', label: 'Barkod Ayarları' },
       { path: '/ayarlar/goz-muayenesi-sablonlari', label: 'Göz Muayenesi Şablonları' },
       { path: '/ayarlar/doktorlar', label: 'Doktor Tanımları' },
       { path: '/ayarlar/hizmet-tup-tipleri', label: 'Hizmet Tüp Tipi Tanımları' },
@@ -137,6 +138,7 @@ const pathToTitle: Record<string, string> = {
   '/istatistikler': 'İstatistikler',
   '/ayarlar': 'Kurum Bilgileri',
   '/ayarlar/sms': 'SMS Ayarları',
+  '/ayarlar/barkod': 'Barkod Ayarları',
   '/ayarlar/goz-muayenesi-sablonlari': 'Göz Muayenesi Şablonları',
   '/ayarlar/doktorlar': 'Doktor Tanımları',
   '/ayarlar/hizmet-tup-tipleri': 'Hizmet Tüp Tipi Tanımları',

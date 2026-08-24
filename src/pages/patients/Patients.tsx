@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FileText, Plus, Search, Trash2 } from 'lucide-react'
 import { usePatients } from '../../context/PatientsContext'
@@ -27,14 +27,6 @@ export function Patients() {
   const [protocolStatusFilter, setProtocolStatusFilter] = useState('Tümü')
   const [protocolPage, setProtocolPage] = useState(1)
   const [protocolPageSize, setProtocolPageSize] = useState(10)
-
-  useEffect(() => {
-    setPage(1)
-  }, [search, statusFilter])
-
-  useEffect(() => {
-    setProtocolPage(1)
-  }, [protocolSearch, protocolStatusFilter])
 
   const filteredPatients = useMemo(() => {
     return patients.filter((p) => {
@@ -171,7 +163,7 @@ export function Patients() {
               type="text"
               placeholder="İsim, telefon, TC veya firma ara..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setPage(1) }}
               onKeyDown={handleSearchKeyDown}
               className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all"
             />
@@ -180,7 +172,7 @@ export function Patients() {
             <Select
               label=""
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={(e) => { setStatusFilter(e.target.value); setPage(1) }}
               options={[
                 { value: 'Tümü', label: 'Tüm Durumlar' },
                 { value: 'Bekliyor', label: 'Bekliyor' },
@@ -295,7 +287,7 @@ export function Patients() {
                   type="text"
                   placeholder="Protokol no, hasta adı veya firma ara..."
                   value={protocolSearch}
-                  onChange={(e) => setProtocolSearch(e.target.value)}
+                  onChange={(e) => { setProtocolSearch(e.target.value); setProtocolPage(1) }}
                   className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all"
                 />
               </div>
@@ -303,7 +295,7 @@ export function Patients() {
                 <Select
                   label=""
                   value={protocolStatusFilter}
-                  onChange={(e) => setProtocolStatusFilter(e.target.value)}
+                  onChange={(e) => { setProtocolStatusFilter(e.target.value); setProtocolPage(1) }}
                   options={[
                     { value: 'Tümü', label: 'Tüm Durumlar' },
                     { value: 'Bekliyor', label: 'Bekliyor' },

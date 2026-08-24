@@ -4,6 +4,7 @@ import { Modal } from '../../../components/ui/Modal'
 export interface BarcodeTestItem {
   name: string
   group: string
+  tubeTypeName: string
   count: number
   protocols: number
 }
@@ -145,6 +146,9 @@ export function BarcodeModal({
                               className="w-3.5 h-3.5 accent-blue-600 cursor-pointer rounded"
                             />
                             <span className="text-[11px] text-slate-700 flex-1 truncate">{test.name}</span>
+                            <span className="text-[9px] text-blue-600 shrink-0 truncate max-w-[150px]" title={`Tüp: ${test.tubeTypeName}`}>
+                              Tüp: {test.tubeTypeName}
+                            </span>
                             <span className="text-[9px] text-slate-400 shrink-0">
                               {test.protocols} protokolde · {test.count} adet
                             </span>

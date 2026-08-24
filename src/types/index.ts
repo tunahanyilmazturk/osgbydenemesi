@@ -110,6 +110,10 @@ export interface ProtocolService {
   pdfId?: string
   // Test notu
   note?: string
+  // Numune red bilgileri
+  rejectionReason?: string
+  rejectedBy?: string
+  rejectedAt?: string
 }
 
 export interface ProtocolPayment {
@@ -148,6 +152,7 @@ export interface ServiceGroup {
 export interface ServiceTubeType {
   id: number
   name: string
+  barcodeShortName?: string
   colorCode: string
   description: string
   isActive: boolean

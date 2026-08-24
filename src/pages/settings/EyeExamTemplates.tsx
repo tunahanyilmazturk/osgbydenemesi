@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Check, Eye, Pencil, Plus, Trash2, X } from 'lucide-react'
 import { PageHeader } from '../../components/PageHeader'
 import { useToast } from '../../context/ToastContext'
@@ -38,7 +38,7 @@ const COLOR_CLASSES: Record<string, { border: string; bg: string; header: string
 
 export function EyeExamTemplates() {
   const { showToast } = useToast()
-  const [templates, setTemplates] = useState<EyeTemplate[]>([])
+  const [templates, setTemplates] = useState<EyeTemplate[]>(loadEyeTemplates)
   const [newTexts, setNewTexts] = useState<Record<EyeTemplateCategory, string>>({
     evaluation: '',
     diagnosis: '',
@@ -46,10 +46,6 @@ export function EyeExamTemplates() {
   })
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
-
-  useEffect(() => {
-    setTemplates(loadEyeTemplates())
-  }, [])
 
   const refresh = () => setTemplates(loadEyeTemplates())
 

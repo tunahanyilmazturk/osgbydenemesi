@@ -45,12 +45,13 @@ import { openAudiometryPdf } from '../../utils/audiometryReport'
 import { openEyeExaminationPdf } from '../../utils/eyeExaminationReport'
 import { nowLocalDateTime, formatDateLocal, addDays } from '../../utils/date'
 import { Pagination } from '../../components/ui/Pagination'
-import type { AudiometryData, EyeExaminationData, PatientDetail, ProtocolService, ServiceCatalogItem, ServicePackage } from '../../types'
+import type { AudiometryData, EyeExaminationData, PatientDetail, ProtocolService, ServiceCatalogItem, ServiceGroup, ServicePackage, ServiceTubeType } from '../../types'
 import { CopyButton } from '../../components/ui/CopyButton'
 import { SmsPreviewModal, type SmsPreviewItem } from './components/SmsPreviewModal'
 import { MultiSelectFilter, FilterChips } from './components/MultiSelectFilter'
 import { buildSmsMessage, sendSms } from '../../utils/sms'
 import { saveSharedPdf, getSharedPdf, incrementPdfRef } from '../../utils/storage'
+import { getTubeBarcodeShortName } from '../../utils/barcodeSettings'
 import { useCompanies, type CompanyService } from '../../context/CompaniesContext'
 import {
   formatDateTime,
@@ -64,11 +65,19 @@ import {
 } from './labUtils'
 import { BarcodeModal, type BarcodeTestItem } from './components/BarcodeModal'
 
+function resolveTubeTypeName(service: ProtocolService, catalog: ServiceCatalogItem[], groups: ServiceGroup[], tubeTypes: ServiceTubeType[]) {
+  const catalogItem = catalog.find((item) => item.code === service.code || item.name === service.name)
+  const group = groups.find((item) => item.name === service.group)
+  const tubeTypeId = catalogItem?.tubeTypeId ?? group?.defaultTubeTypeId
+  const tubeType = tubeTypes.find((item) => item.id === tubeTypeId)
+  return tubeType?.barcodeShortName || (tubeType ? getTubeBarcodeShortName(tubeType.name) : 'Tanımlı değil')
+}
+
 export function Lab() {
   const navigate = useNavigate()
   const { protocols, updateServiceInProtocol, addServiceToProtocol, removeServiceFromProtocol } = useProtocols()
   const { patients, updatePatient } = usePatients()
-  const { catalog, groups, packages } = useServices()
+  const { catalog, groups, tubeTypes, packages } = useServices()
   const { currentUser, users } = useAuth()
   const { companies: companyList } = useCompanies()
   const { showToast } = useToast()
@@ -142,7 +151,7 @@ export function Lab() {
   )
 
   const statusOptions = useMemo(
-    () => ['Barkod Verildi', 'İşlem Bekliyor', 'Numune Kabul', 'Sonuç Bekleniyor', 'Sonuç Girildi', 'Onaylandı'],
+    () => ['Barkod Verildi', 'İşlem Bekliyor', 'Numune Kabul', 'Numune Red', 'Sonuç Bekleniyor', 'Sonuç Girildi', 'Onaylandı'],
     []
   )
 
@@ -352,7 +361,7 @@ export function Lab() {
     if (targetIds.length === 0) return []
 
     const protocolsMap = new Map(protocols.map((p) => [p.id, p]))
-    const testMap = new Map<string, { name: string; group: string; count: number; protocols: number }>()
+    const testMap = new Map<string, { name: string; group: string; tubeTypeName: string; count: number; protocols: number }>()
 
     targetIds.forEach((pid) => {
       const protocol = protocolsMap.get(pid)
@@ -361,7 +370,7 @@ export function Lab() {
       protocol.services.forEach((s) => {
         const key = s.name
         if (!testMap.has(key)) {
-          testMap.set(key, { name: s.name, group: s.group, count: 0, protocols: 0 })
+          testMap.set(key, { name: s.name, group: s.group, tubeTypeName: resolveTubeTypeName(s, catalog, groups, tubeTypes), count: 0, protocols: 0 })
         }
         const entry = testMap.get(key)!
         entry.count++
@@ -373,7 +382,7 @@ export function Lab() {
     })
 
     return Array.from(testMap.values()).sort((a, b) => a.group.localeCompare(b.group, 'tr') || a.name.localeCompare(b.name, 'tr'))
-  }, [selectedProtocolIds, selectedProtocolId, protocols])
+  }, [selectedProtocolIds, selectedProtocolId, protocols, catalog, groups, tubeTypes])
 
   // Toplu barkod yazdırma — sadece seçili testler, her protokol ayrı gönderilir
   const handlePrintSelectedBarcodesByTest = () => {
@@ -420,7 +429,7 @@ export function Lab() {
       ]
       const serviceValues: string[] = []
       filteredServices.forEach((service) => {
-        serviceValues.push(service.group, service.name, service.barcode || '')
+        serviceValues.push(service.group, `${service.name}\nTüp: ${resolveTubeTypeName(service, catalog, groups, tubeTypes)}`, service.barcode || '')
         totalBarcodes++
       })
       const values = [...baseValues, ...serviceValues, '']
@@ -633,7 +642,7 @@ export function Lab() {
       ]
       const serviceValues: string[] = []
       selectedServicesList.forEach((service) => {
-        serviceValues.push(service.group, service.name, service.barcode || '')
+        serviceValues.push(service.group, `${service.name}\nTüp: ${resolveTubeTypeName(service, catalog, groups, tubeTypes)}`, service.barcode || '')
       })
       const values = [...baseValues, ...serviceValues, '']
       const params = values.map(encodeURIComponent).join(encodeURIComponent('|'))
@@ -645,7 +654,7 @@ export function Lab() {
       a.click()
       document.body.removeChild(a)
       showToast('info', 'Barkod yazdırma', 'Barkod yazıcıya gönderildi. Yazıcının açık olduğundan emin olun.')
-    } catch (error) {
+    } catch {
       showToast('error', 'Barkod yazdırılamadı', 'Yazıcı uygulaması bulunamadı veya bir hata oluştu.')
     }
   }
@@ -676,7 +685,7 @@ export function Lab() {
       ]
       const serviceValues: string[] = []
       allServices.forEach((service) => {
-        serviceValues.push(service.group, service.name, service.barcode || '')
+        serviceValues.push(service.group, `${service.name}\nTüp: ${resolveTubeTypeName(service, catalog, groups, tubeTypes)}`, service.barcode || '')
       })
       const values = [...baseValues, ...serviceValues, '']
       const params = values.map(encodeURIComponent).join(encodeURIComponent('|'))
@@ -688,7 +697,7 @@ export function Lab() {
       a.click()
       document.body.removeChild(a)
       showToast('info', 'Barkod yazdırma', `${allServices.length} barkod yazıcıya gönderildi.`)
-    } catch (error) {
+    } catch {
       showToast('error', 'Barkod yazdırılamadı', 'Yazıcı uygulaması bulunamadı veya bir hata oluştu.')
     }
   }
@@ -1554,6 +1563,8 @@ export function Lab() {
   // Test notu
   const [noteModal, setNoteModal] = useState<{ serviceId: number; serviceName: string; note: string } | null>(null)
   const [noteDraft, setNoteDraft] = useState('')
+  const [rejectionModal, setRejectionModal] = useState<{ serviceId: number; serviceName: string } | null>(null)
+  const [rejectionDraft, setRejectionDraft] = useState('')
 
   // Not şablonları — localStorage'da saklanır
   const [noteTemplates, setNoteTemplates] = useState<string[]>(() => {
@@ -1600,6 +1611,27 @@ export function Lab() {
     const service = selectedServices.find((s) => s.id === serviceId)
     setNoteDraft(service?.note ?? '')
     setNoteModal({ serviceId, serviceName: service?.name ?? '', note: service?.note ?? '' })
+  }
+
+  const openRejectionModal = (serviceId: number) => {
+    const service = selectedServices.find((item) => item.id === serviceId)
+    setRejectionDraft('')
+    setRejectionModal({ serviceId, serviceName: service?.name ?? '' })
+  }
+
+  const handleRejectSample = () => {
+    if (!selectedProtocol || !rejectionModal || !rejectionDraft.trim()) return
+    updateServiceInProtocol(selectedProtocol.id, rejectionModal.serviceId, {
+      status: 'Numune Red',
+      rejectionReason: rejectionDraft.trim(),
+      rejectedBy: currentUser?.displayName ?? 'Sistem',
+      rejectedAt: nowLocalDateTime(),
+    })
+    showToast('warning', 'Numune reddedildi', `${rejectionModal.serviceName} N.Red nedenlerine eklendi.`)
+    setRejectionModal(null)
+    setRejectionDraft('')
+    setContextMenu(null)
+    setSelectedServiceIds([])
   }
 
   const handleSaveNote = () => {
@@ -2289,6 +2321,9 @@ export function Lab() {
                                     {service.name}
                                   </p>
                                   <p className="text-[10px] text-slate-500">{service.group}</p>
+                                  <p className="text-[10px] text-blue-600 truncate" title={`Tüp: ${resolveTubeTypeName(service, catalog, groups, tubeTypes)}`}>
+                                    Tüp: {resolveTubeTypeName(service, catalog, groups, tubeTypes)}
+                                  </p>
                                 </div>
                                 {(service.pdfData || service.pdfId) && (
                                   <button
@@ -2860,6 +2895,17 @@ export function Lab() {
                   {/* Ayraç */}
                   <div className="h-px bg-slate-100 my-1" />
 
+                  <button
+                    onClick={() => {
+                      openRejectionModal(contextMenu.serviceId)
+                      setContextMenu(null)
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-red-700 hover:bg-red-50 transition-colors text-left"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    Numune Reddet
+                  </button>
+
                   {/* Durum değiştir */}
                   <div className="px-3 py-1 text-[9px] font-semibold text-slate-400 uppercase tracking-wide">Durum</div>
                   {['İşlem Bekliyor', 'Numune Kabul', 'Sonuç Bekleniyor', 'Sonuç Girildi', 'Onaylandı'].map((st) => (
@@ -2943,6 +2989,51 @@ export function Lab() {
         className="hidden"
         onChange={handleBulkPdfUpload}
       />
+
+      <Modal
+        isOpen={!!rejectionModal}
+        onClose={() => { setRejectionModal(null); setRejectionDraft('') }}
+        title="Numune Red Nedeni"
+        subtitle={rejectionModal ? <span className="text-xs font-medium text-slate-600 truncate">{rejectionModal.serviceName}</span> : undefined}
+        size="md"
+      >
+        {rejectionModal && (
+          <div className="space-y-4">
+            <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
+              <p className="text-xs text-red-800 font-medium">Bu test numune red olarak işaretlenecek.</p>
+              <p className="text-[11px] text-red-700 mt-1">Doktor açıklaması N.Red Nedenleri ekranında kalıcı olarak takip edilecektir.</p>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">Red Nedeni ve Doktor Açıklaması *</label>
+              <textarea
+                value={rejectionDraft}
+                onChange={(e) => setRejectionDraft(e.target.value)}
+                rows={5}
+                autoFocus
+                placeholder="Örn: Numune hemolizli, yeniden numune alınması gerekiyor..."
+                className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-red-400 focus:bg-white focus:ring-4 focus:ring-red-500/10 resize-none"
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => { setRejectionModal(null); setRejectionDraft('') }}
+                className="px-4 py-2 border border-slate-200 text-slate-700 text-sm font-medium rounded-xl hover:bg-slate-50"
+              >
+                Vazgeç
+              </button>
+              <button
+                type="button"
+                onClick={handleRejectSample}
+                disabled={!rejectionDraft.trim()}
+                className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-xl hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Numuneyi Reddet
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* Not Ekleme Modalı — Sol sidebar şablonlar, sağ içerik */}
       <Modal
