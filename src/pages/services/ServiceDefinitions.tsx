@@ -140,13 +140,6 @@ export function ServiceDefinitions() {
     [filteredCatalog, safePage, itemsPerPage]
   )
 
-  const selectedServiceGroup = useMemo(() => groups.find((g) => g.name === form.group), [groups, form.group])
-  const availableExternalLabs = useMemo(() => {
-    const groupLabIds = selectedServiceGroup?.labIds ?? []
-    if (groupLabIds.length === 0) return externalLabs
-    return externalLabs.filter((lab) => groupLabIds.includes(lab.id))
-  }, [externalLabs, selectedServiceGroup])
-
   const groupCounts = useMemo(() => {
     const counts: Record<string, number> = {}
     catalog.forEach((c) => {
@@ -270,13 +263,6 @@ export function ServiceDefinitions() {
     return sortOrder === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-blue-600" /> : <ArrowDown className="w-3.5 h-3.5 text-blue-600" />
   }
 
-  const toggleServiceLab = (labId: number) => {
-    const next = form.labIds.includes(labId)
-      ? form.labIds.filter((id) => id !== labId)
-      : [...form.labIds, labId]
-    update('labIds', next)
-  }
-
   const clearFilters = () => {
     setSearch('')
     setGroupFilter('Tümü')
@@ -369,118 +355,82 @@ export function ServiceDefinitions() {
         }
       />
 
-      {/* Category cards */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h4 className="text-sm font-bold text-slate-700 uppercase">Kategoriler</h4>
-          <span className="text-xs text-slate-400">{groups.length} kategori</span>
-        </div>
-        <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
-          <button
-            onClick={() => setGroupFilter('Tümü')}
-            className={`shrink-0 flex flex-col items-start justify-between p-3 rounded-xl border min-w-[140px] transition-all ${
-              groupFilter === 'Tümü'
-                ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500'
-                : 'border-slate-100 bg-slate-50 hover:border-slate-200'
-            }`}
-          >
-            <span className="text-xs font-medium text-slate-500">Tümü</span>
-            <span className="text-2xl font-bold text-slate-800">{catalog.filter((c) => c.isActive).length}</span>
-          </button>
-          {groups.map((group) => {
-            const colors = getGroupColor(group.color)
-            const count = groupCounts[group.name] ?? 0
-            const isActive = groupFilter === group.name
-            return (
-              <button
-                key={group.id}
-                onClick={() => setGroupFilter(isActive ? 'Tümü' : group.name)}
-                className={`shrink-0 flex flex-col items-start justify-between p-3 rounded-xl border min-w-[160px] transition-all ${
-                  isActive
-                    ? 'ring-1'
-                    : 'hover:border-slate-200'
-                }`}
-                style={{
-                  backgroundColor: isActive ? `${colors.hex}15` : '#f8fafc',
-                  borderColor: isActive ? colors.hex : '#f1f5f9',
-                  boxShadow: isActive ? `0 0 0 1px ${colors.hex}` : undefined,
-                }}
-              >
-                <span className="text-xs font-medium text-slate-500 truncate w-full text-left">{group.name}</span>
-                <span className="text-2xl font-bold" style={{ color: colors.hex }}>
-                  {count}
-                </span>
-              </button>
-            )
-          })}
-        </div>
-      </div>
-
       {/* Filters */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3 items-end">
-          <div className="lg:col-span-2 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-3 items-end">
+          <div className="lg:col-span-4 relative">
+            <label className="block font-semibold text-slate-700 mb-1 text-xs">Hizmet Ara</label>
+            <Search className="absolute left-3 top-[calc(1.5rem+0.5rem)] -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               type="text"
-              placeholder="Hizmet ara..."
+              placeholder="Hizmet adı veya kod ile ara..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
             />
           </div>
-          <Select
-            size="sm"
-            label="Grup"
-            value={groupFilter}
-            onChange={(e) => setGroupFilter(e.target.value)}
-            options={['Tümü', ...groupNames].map((g) => ({ value: g, label: g }))}
-          />
-          <Select
-            size="sm"
-            label="Durum"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as 'Tümü' | 'Aktif' | 'Pasif')}
-            options={[
-              { value: 'Tümü', label: 'Tümü' },
-              { value: 'Aktif', label: 'Aktif' },
-              { value: 'Pasif', label: 'Pasif' },
-            ]}
-          />
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="Min fiyat"
-              value={priceMin}
-              onChange={(e) => setPriceMin(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500"
-            />
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="Max fiyat"
-              value={priceMax}
-              onChange={(e) => setPriceMax(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500"
-            />
-          </div>
-          <div className="flex items-center gap-2">
+          <div className="lg:col-span-2">
             <Select
               size="sm"
-              label="Sırala"
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as SortField)}
+              label="Grup"
+              value={groupFilter}
+              onChange={(e) => setGroupFilter(e.target.value)}
+              options={['Tümü', ...groupNames].map((g) => ({ value: g, label: g }))}
+            />
+          </div>
+          <div className="lg:col-span-2">
+            <Select
+              size="sm"
+              label="Durum"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as 'Tümü' | 'Aktif' | 'Pasif')}
               options={[
-                { value: 'name', label: 'Hizmet Adı' },
-                { value: 'group', label: 'Grup' },
-                { value: 'price', label: 'Fiyat' },
-                { value: 'vatRate', label: 'KDV' },
-                { value: 'total', label: 'KDV Dahil' },
+                { value: 'Tümü', label: 'Tümü' },
+                { value: 'Aktif', label: 'Aktif' },
+                { value: 'Pasif', label: 'Pasif' },
               ]}
             />
+          </div>
+          <div className="lg:col-span-1">
+            <label className="block font-semibold text-slate-700 mb-1 text-xs">Min Fiyat</label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="0"
+              value={priceMin}
+              onChange={(e) => setPriceMin(e.target.value)}
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+            />
+          </div>
+          <div className="lg:col-span-1">
+            <label className="block font-semibold text-slate-700 mb-1 text-xs">Max Fiyat</label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="∞"
+              value={priceMax}
+              onChange={(e) => setPriceMax(e.target.value)}
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+            />
+          </div>
+          <div className="lg:col-span-2 flex items-end gap-2">
+            <div className="flex-1">
+              <Select
+                size="sm"
+                label="Sırala"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortField)}
+                options={[
+                  { value: 'name', label: 'Hizmet Adı' },
+                  { value: 'group', label: 'Grup' },
+                  { value: 'price', label: 'Fiyat' },
+                  { value: 'vatRate', label: 'KDV' },
+                  { value: 'total', label: 'KDV Dahil' },
+                ]}
+              />
+            </div>
             <button
               type="button"
               onClick={() => setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'))}
@@ -858,39 +808,6 @@ export function ServiceDefinitions() {
             </div>
           </div>
 
-          {/* Laboratuvar ve Tüp */}
-          <div className="bg-slate-50/50 rounded-2xl border border-slate-100 p-4 space-y-4">
-            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Laboratuvar ve Tüp</h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Select
-                size="sm"
-                label="Tüp Tipi"
-                value={form.tubeTypeId === null ? '' : String(form.tubeTypeId)}
-                onChange={(e) => update('tubeTypeId', e.target.value ? Number(e.target.value) : null)}
-                options={[
-                  { value: '', label: 'Kategorinin varsayılan tüp tipi' },
-                  ...tubeTypes
-                    .filter((t) => t.isActive || t.id === form.tubeTypeId)
-                    .map((t) => ({ value: String(t.id), label: t.name })),
-                ]}
-              />
-              <Input
-                size="sm"
-                label="Birim"
-                value={form.unit}
-                onChange={(e) => update('unit', e.target.value)}
-                placeholder="mg/dL, dB, adet..."
-              />
-              <Input
-                size="sm"
-                label="Referans Aralığı"
-                value={form.referenceRange}
-                onChange={(e) => update('referenceRange', e.target.value)}
-                placeholder="70 - 110"
-              />
-            </div>
-          </div>
-
           {/* Açıklama */}
           <div className="bg-slate-50/50 rounded-2xl border border-slate-100 p-4 space-y-4">
             <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Açıklama</h4>
@@ -901,43 +818,6 @@ export function ServiceDefinitions() {
               rows={3}
               className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 resize-none"
             />
-          </div>
-
-          {/* Dış Laboratuvarlar */}
-          <div className="bg-slate-50/50 rounded-2xl border border-slate-100 p-4 space-y-4">
-            <div className="flex items-center justify-between">
-              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Hizmet Bazında Dış Laboratuvarlar</h4>
-              {selectedServiceGroup && selectedServiceGroup.labIds.length > 0 && (
-                <span className="text-[10px] text-slate-400">
-                  {selectedServiceGroup.name} kategorisi için izin verilenler
-                </span>
-              )}
-            </div>
-            {availableExternalLabs.length === 0 ? (
-              <p className="text-xs text-slate-500">Bu kategori için tanımlı dış laboratuvar bulunamadı.</p>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-40 overflow-y-auto p-3 bg-white rounded-xl border border-slate-100">
-                {availableExternalLabs.map((lab) => (
-                  <label
-                    key={lab.id}
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={form.labIds.includes(lab.id)}
-                      onChange={() => toggleServiceLab(lab.id)}
-                      className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-xs text-slate-700 truncate" title={lab.name}>
-                      {lab.name}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            )}
-            <p className="text-[10px] text-slate-400">
-              Boş bırakılırsa kategori düzeyindeki dış lab ayarları geçerli olur.
-            </p>
           </div>
 
           <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">

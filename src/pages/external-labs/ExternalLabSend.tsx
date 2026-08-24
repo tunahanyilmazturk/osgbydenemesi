@@ -2,7 +2,6 @@
 import { useNavigate } from 'react-router-dom'
 import { Calendar, ChevronLeft, ChevronRight, Search, Send } from 'lucide-react'
 import type { ExternalLab, ExternalLabSendRecord } from '../../types'
-import { defaultExternalLabSends } from './mocks/externalLabSendsMock'
 import { defaultExternalLabs } from './mocks/externalLabsDefaults'
 
 const EXTERNAL_LABS_KEY = 'cetka-external-labs'
@@ -51,7 +50,7 @@ function loadSends(): ExternalLabSendRecord[] {
   } catch {
     // ignore
   }
-  return defaultExternalLabSends
+  return []
 }
 
 function saveSends(sends: ExternalLabSendRecord[]) {

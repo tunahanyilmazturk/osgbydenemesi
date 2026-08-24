@@ -9,6 +9,7 @@ import { CashProvider } from './context/CashContext'
 import { ConfirmProvider } from './context/ConfirmContext'
 import { ExamTypesProvider } from './context/ExamTypesContext'
 import { NotificationProvider } from './context/NotificationContext'
+import { WebResultUsersProvider } from './context/WebResultUsersContext'
 import './index.css'
 import App from './App.tsx'
 
@@ -23,7 +24,9 @@ createRoot(document.getElementById('root')!).render(
                 <ServicesProvider>
                   <ProtocolsProvider>
                     <NotificationProvider>
-                      <App />
+                      <WebResultUsersProvider>
+                        <App />
+                      </WebResultUsersProvider>
                     </NotificationProvider>
                   </ProtocolsProvider>
                 </ServicesProvider>

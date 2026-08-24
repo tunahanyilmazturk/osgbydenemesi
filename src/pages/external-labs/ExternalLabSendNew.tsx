@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, Search, Send, Users, Stethoscope, CheckCircle, FileSearch, Calendar } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Send, Users, Stethoscope, CheckCircle, FileSearch, Calendar } from 'lucide-react'
 import { usePatients } from '../../context/PatientsContext'
 import { useProtocols } from '../../context/ProtocolsContext'
 import { useCompanies } from '../../context/CompaniesContext'
@@ -118,7 +118,8 @@ export function ExternalLabSendNew() {
   const [selectedPatients, setSelectedPatients] = useState<Set<number>>(new Set())
   const [selectedServices, setSelectedServices] = useState<Set<number>>(new Set())
   const [selectedLabId, setSelectedLabId] = useState<number | null>(null)
-  const [sendNote, setSendNote] = useState('')
+  const [lastSelectedPatientIdx, setLastSelectedPatientIdx] = useState<number | null>(null)
+  const [lastSelectedServiceIdx, setLastSelectedServiceIdx] = useState<number | null>(null)
 
   // Hizmet sekmesi filtreleri
   const [serviceGroupFilter, setServiceGroupFilter] = useState('Tümü')
@@ -218,23 +219,43 @@ export function ExternalLabSendNew() {
 
   const allPatientsSelected = patientRows.length > 0 && selectedPatients.size === patientRows.length
 
-  const togglePatient = (patientId: number) => {
+  const handlePatientRowClick = (e: React.MouseEvent, patientId: number, idx: number) => {
+    // Ctrl/Cmd+click: toggle individual
+    if (e.ctrlKey || e.metaKey) {
+      setSelectedPatients((prev) => {
+        const next = new Set(prev)
+        if (next.has(patientId)) next.delete(patientId)
+        else next.add(patientId)
+        return next
+      })
+      setLastSelectedPatientIdx(idx)
+      return
+    }
+    // Shift+click: range select
+    if (e.shiftKey && lastSelectedPatientIdx !== null) {
+      const start = Math.min(lastSelectedPatientIdx, idx)
+      const end = Math.max(lastSelectedPatientIdx, idx)
+      const rangeIds = patientRows.slice(start, end + 1).map((r) => r.patient.id)
+      setSelectedPatients((prev) => new Set([...prev, ...rangeIds]))
+      return
+    }
+    // Normal click: toggle single
     setSelectedPatients((prev) => {
       const next = new Set(prev)
-      if (next.has(patientId)) {
-        next.delete(patientId)
-      } else {
-        next.add(patientId)
-      }
+      if (next.has(patientId)) next.delete(patientId)
+      else next.add(patientId)
       return next
     })
+    setLastSelectedPatientIdx(idx)
   }
 
   const toggleAllPatients = () => {
     if (allPatientsSelected) {
       setSelectedPatients(new Set())
+      setLastSelectedPatientIdx(null)
     } else {
       setSelectedPatients(new Set(patientRows.map((r) => r.patient.id)))
+      setLastSelectedPatientIdx(patientRows.length - 1)
     }
   }
 
@@ -259,23 +280,43 @@ export function ExternalLabSendNew() {
 
   const allServicesSelected = candidateServices.length > 0 && selectedServices.size === candidateServices.length
 
-  const toggleService = (serviceId: number) => {
+  const handleServiceRowClick = (e: React.MouseEvent, serviceId: number, idx: number) => {
+    // Ctrl/Cmd+click: toggle individual
+    if (e.ctrlKey || e.metaKey) {
+      setSelectedServices((prev) => {
+        const next = new Set(prev)
+        if (next.has(serviceId)) next.delete(serviceId)
+        else next.add(serviceId)
+        return next
+      })
+      setLastSelectedServiceIdx(idx)
+      return
+    }
+    // Shift+click: range select
+    if (e.shiftKey && lastSelectedServiceIdx !== null) {
+      const start = Math.min(lastSelectedServiceIdx, idx)
+      const end = Math.max(lastSelectedServiceIdx, idx)
+      const rangeIds = candidateServices.slice(start, end + 1).map((r) => r.service.id)
+      setSelectedServices((prev) => new Set([...prev, ...rangeIds]))
+      return
+    }
+    // Normal click: toggle single
     setSelectedServices((prev) => {
       const next = new Set(prev)
-      if (next.has(serviceId)) {
-        next.delete(serviceId)
-      } else {
-        next.add(serviceId)
-      }
+      if (next.has(serviceId)) next.delete(serviceId)
+      else next.add(serviceId)
       return next
     })
+    setLastSelectedServiceIdx(idx)
   }
 
   const toggleAllServices = () => {
     if (allServicesSelected) {
       setSelectedServices(new Set())
+      setLastSelectedServiceIdx(null)
     } else {
       setSelectedServices(new Set(candidateServices.map((r) => r.service.id)))
+      setLastSelectedServiceIdx(candidateServices.length - 1)
     }
   }
 
@@ -476,37 +517,43 @@ export function ExternalLabSendNew() {
             <div className="space-y-3">
               <div>
                 <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tarih Aralığı</label>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => shiftDay(-1)}
-                    className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => {
-                      setStartDate(e.target.value)
-                      setProtocolDate('Özel')
-                    }}
-                    className="w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-700 focus:outline-none focus:border-blue-500"
-                  />
-                  <input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => {
-                      setEndDate(e.target.value)
-                      setProtocolDate('Özel')
-                    }}
-                    className="w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-700 focus:outline-none focus:border-blue-500"
-                  />
-                  <button
-                    onClick={() => shiftDay(1)}
-                    className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => shiftDay(-1)}
+                      className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 shrink-0"
+                      title="Önceki gün"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => {
+                        setStartDate(e.target.value)
+                        setProtocolDate('Özel')
+                      }}
+                      className="w-full min-w-0 px-2 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-700 focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => {
+                        setEndDate(e.target.value)
+                        setProtocolDate('Özel')
+                      }}
+                      className="w-full min-w-0 px-2 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-700 focus:outline-none focus:border-blue-500"
+                    />
+                    <button
+                      onClick={() => shiftDay(1)}
+                      className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 shrink-0"
+                      title="Sonraki gün"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -626,11 +673,6 @@ export function ExternalLabSendNew() {
                   className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-blue-500"
                 />
               </div>
-
-              <button className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-600 text-white text-sm font-medium rounded-lg hover:bg-slate-700 transition-colors">
-                <Search className="w-4 h-4" />
-                Sorgula
-              </button>
             </div>
           </div>
 
@@ -638,24 +680,21 @@ export function ExternalLabSendNew() {
           <div className="lg:col-span-8 xl:col-span-9 bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
             <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
               <h2 className="text-sm font-semibold text-slate-800">Hasta Listesi</h2>
-              <span className="text-xs text-slate-500">{patientRows.length} hasta</span>
+              <span className="text-xs text-slate-500">
+                {selectedPatients.size} / {patientRows.length} seçildi
+                <span className="text-slate-300 ml-2">·</span>
+                <span className="text-slate-400 ml-2">Tıkla: Seç · Ctrl: Tek tek · Shift: Aralık</span>
+              </span>
             </div>
             <div className="overflow-x-auto flex-1 min-h-0">
               <table className="table-fixed w-full text-left text-xs">
                 <thead className="bg-slate-50 text-slate-500">
                   <tr>
-                    <th className="px-3 py-2.5 w-10 text-center">
-                      <input
-                        type="checkbox"
-                        checked={allPatientsSelected}
-                        onChange={toggleAllPatients}
-                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                      />
-                    </th>
                     <th className="px-3 py-2.5 font-medium">Hasta Adı</th>
                     <th className="px-3 py-2.5 font-medium w-28">TC</th>
                     <th className="px-3 py-2.5 font-medium">Firma</th>
                     <th className="px-3 py-2.5 font-medium w-28">Protokol No</th>
+                    <th className="px-3 py-2.5 font-medium w-24">Muayene Türü</th>
                     <th className="px-3 py-2.5 font-medium w-36">Tarih</th>
                     <th className="px-3 py-2.5 font-medium w-24 text-center">Hizmet</th>
                   </tr>
@@ -668,28 +707,32 @@ export function ExternalLabSendNew() {
                       </td>
                     </tr>
                   ) : (
-                    patientRows.map(({ patient, protocols }) =>
+                    patientRows.map(({ patient, protocols }, rowIdx) =>
                       protocols.map((p, idx) => (
-                        <tr key={`${patient.id}-${p.id}`} className="hover:bg-slate-50 transition-colors">
-                          {idx === 0 && (
-                            <td
-                              rowSpan={protocols.length}
-                              className="px-3 py-2.5 text-center border-r border-slate-100"
-                            >
-                              <input
-                                type="checkbox"
-                                checked={selectedPatients.has(patient.id)}
-                                onChange={() => togglePatient(patient.id)}
-                                className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                              />
-                            </td>
-                          )}
+                        <tr
+                          key={`${patient.id}-${p.id}`}
+                          onClick={(e) => handlePatientRowClick(e, patient.id, rowIdx)}
+                          className={`cursor-pointer transition-colors ${
+                            selectedPatients.has(patient.id)
+                              ? 'bg-blue-50 hover:bg-blue-100'
+                              : 'hover:bg-slate-50'
+                          }`}
+                        >
                           {idx === 0 && (
                             <td
                               rowSpan={protocols.length}
                               className="px-3 py-2.5 text-slate-800 font-medium border-r border-slate-100"
                             >
-                              {patient.name}
+                              <div className="flex items-center gap-2">
+                                <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
+                                  selectedPatients.has(patient.id)
+                                    ? 'bg-blue-600 border-blue-600 text-white'
+                                    : 'border-slate-300 bg-white'
+                                }`}>
+                                  {selectedPatients.has(patient.id) && <CheckCircle className="w-3 h-3" />}
+                                </span>
+                                {patient.name}
+                              </div>
                             </td>
                           )}
                           {idx === 0 && (
@@ -704,6 +747,9 @@ export function ExternalLabSendNew() {
                             {p.company}
                           </td>
                           <td className="px-3 py-2.5 text-slate-700 font-medium">{p.protocolNo}</td>
+                          <td className="px-3 py-2.5 text-slate-600 truncate" title={p.examType}>
+                            {p.examType}
+                          </td>
                           <td className="px-3 py-2.5 text-slate-600">{formatDateTime(p.protocolDate)}</td>
                           <td className="px-3 py-2.5 text-center text-slate-700 font-medium">
                             {p.services.filter((s) => {
@@ -721,7 +767,14 @@ export function ExternalLabSendNew() {
                 </tbody>
               </table>
             </div>
-            <div className="px-4 py-3 border-t border-slate-100 flex items-center justify-end">
+            <div className="px-4 py-3 border-t border-slate-100 flex items-center justify-between">
+              <button
+                onClick={toggleAllPatients}
+                className="inline-flex items-center gap-2 px-4 py-2.5 border border-slate-200 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50 transition-colors"
+              >
+                <CheckCircle className="w-4 h-4" />
+                {allPatientsSelected ? 'Seçimi Kaldır' : 'Tümünü Seç'}
+              </button>
               <button
                 onClick={handleNext}
                 disabled={selectedPatients.size === 0}
@@ -816,20 +869,14 @@ export function ExternalLabSendNew() {
               <h2 className="text-sm font-semibold text-slate-800">Hizmet Listesi</h2>
               <span className="text-xs text-slate-500">
                 {selectedServices.size} / {candidateServices.length} seçildi
+                <span className="text-slate-300 ml-2">·</span>
+                <span className="text-slate-400 ml-2">Tıkla: Seç · Ctrl: Tek tek · Shift: Aralık</span>
               </span>
             </div>
             <div className="overflow-x-auto flex-1 min-h-0">
               <table className="table-fixed w-full text-left text-xs">
                 <thead className="bg-slate-50 text-slate-500">
                   <tr>
-                    <th className="px-3 py-2.5 w-10 text-center">
-                      <input
-                        type="checkbox"
-                        checked={allServicesSelected}
-                        onChange={toggleAllServices}
-                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                      />
-                    </th>
                     <th className="px-3 py-2.5 font-medium w-36">Hasta Adı</th>
                     <th className="px-3 py-2.5 font-medium w-28">Protokol No</th>
                     <th className="px-3 py-2.5 font-medium">Hizmet Adı</th>
@@ -841,23 +888,32 @@ export function ExternalLabSendNew() {
                 <tbody className="divide-y divide-slate-100">
                   {candidateServices.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="px-4 py-10 text-center text-slate-500">
+                      <td colSpan={6} className="px-4 py-10 text-center text-slate-500">
                         Seçilen hastalara ait gönderilebilir hizmet bulunamadı.
                       </td>
                     </tr>
                   ) : (
-                    candidateServices.map(({ service, protocol, patient }) => (
-                      <tr key={service.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="px-3 py-2.5 text-center">
-                          <input
-                            type="checkbox"
-                            checked={selectedServices.has(service.id)}
-                            onChange={() => toggleService(service.id)}
-                            className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                          />
-                        </td>
+                    candidateServices.map(({ service, protocol, patient }, idx) => (
+                      <tr
+                        key={service.id}
+                        onClick={(e) => handleServiceRowClick(e, service.id, idx)}
+                        className={`cursor-pointer transition-colors ${
+                          selectedServices.has(service.id)
+                            ? 'bg-blue-50 hover:bg-blue-100'
+                            : 'hover:bg-slate-50'
+                        }`}
+                      >
                         <td className="px-3 py-2.5 text-slate-800 font-medium truncate" title={patient.name}>
-                          {patient.name}
+                          <div className="flex items-center gap-2">
+                            <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
+                              selectedServices.has(service.id)
+                                ? 'bg-blue-600 border-blue-600 text-white'
+                                : 'border-slate-300 bg-white'
+                            }`}>
+                              {selectedServices.has(service.id) && <CheckCircle className="w-3 h-3" />}
+                            </span>
+                            <span className="truncate">{patient.name}</span>
+                          </div>
                         </td>
                         <td className="px-3 py-2.5 text-slate-700 font-medium">{protocol.protocolNo}</td>
                         <td className="px-3 py-2.5 text-slate-600 truncate" title={service.name}>
@@ -877,12 +933,21 @@ export function ExternalLabSendNew() {
               </table>
             </div>
             <div className="px-4 py-3 border-t border-slate-100 flex items-center justify-between">
-              <button
-                onClick={handleBack}
-                className="px-5 py-2.5 border border-slate-200 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50"
-              >
-                Geri
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={toggleAllServices}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 border border-slate-200 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50 transition-colors"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  {allServicesSelected ? 'Seçimi Kaldır' : 'Tümünü Seç'}
+                </button>
+                <button
+                  onClick={handleBack}
+                  className="px-5 py-2.5 border border-slate-200 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50"
+                >
+                  Geri
+                </button>
+              </div>
               <button
                 onClick={handleNext}
                 disabled={selectedServices.size === 0}
@@ -898,13 +963,51 @@ export function ExternalLabSendNew() {
 
       {activeTab === 'son' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1 min-h-0">
-          <div className="lg:col-span-8 xl:col-span-9 bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+          {/* Sol: Seçilen Hizmetler */}
+          <div className="lg:col-span-5 xl:col-span-4 bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
+            <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-slate-800">Seçilen Hizmetler</h3>
+              <span className="text-xs text-slate-500">{selectedServiceDetails.length} hizmet</span>
+            </div>
+            <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2">
+              {selectedServiceDetails.length === 0 ? (
+                <p className="text-xs text-slate-400 text-center py-8">Seçili hizmet yok.</p>
+              ) : (
+                selectedServiceDetails.map(({ service, patient }) => {
+                  const isValid = !selectedLabId || validForSelectedLab.some((v) => v.service.id === service.id)
+                  return (
+                    <div
+                      key={service.id}
+                      className={`p-2.5 rounded-lg border text-xs ${
+                        isValid
+                          ? 'bg-slate-50 border-slate-100'
+                          : 'bg-red-50 border-red-200'
+                      }`}
+                    >
+                      <p className="font-medium text-slate-700 truncate" title={service.name}>
+                        {service.name}
+                      </p>
+                      <p className="text-slate-500 mt-0.5">
+                        {patient.name} — {service.barcode}
+                      </p>
+                      {!isValid && (
+                        <p className="text-[10px] text-red-600 mt-1">Bu lab'a gönderilemez</p>
+                      )}
+                    </div>
+                  )
+                })
+              )}
+            </div>
+          </div>
+
+          {/* Sağ: Son Kontroller */}
+          <div className="lg:col-span-7 xl:col-span-8 bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col">
             <h2 className="text-base font-semibold text-slate-800 mb-4 flex items-center gap-2">
               <Calendar className="w-5 h-5 text-slate-400" />
               Son Kontroller
             </h2>
 
-            <div className="space-y-4 max-w-xl">
+            <div className="space-y-4 flex-1">
               <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
                 <p className="text-sm text-slate-600">
                   Seçilen Hasta: <span className="font-semibold text-slate-800">{selectedPatientsInServices.size}</span>
@@ -951,17 +1054,6 @@ export function ExternalLabSendNew() {
                 </select>
               </div>
 
-              <div>
-                <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Gönderim Notu</label>
-                <textarea
-                  value={sendNote}
-                  onChange={(e) => setSendNote(e.target.value)}
-                  rows={3}
-                  placeholder="Gönderim ile ilgili not ekleyin..."
-                  className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 resize-none"
-                />
-              </div>
-
               <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
                 <p className="text-sm text-blue-800 font-medium">
                   {selectedLabId && activeLabs.find((l) => l.id === selectedLabId)?.name} laboratuvarına{' '}
@@ -969,39 +1061,23 @@ export function ExternalLabSendNew() {
                   {invalidForSelectedLab.length > 0 && ` ${invalidForSelectedLab.length} hizmet bu lab ile gönderilmeyecek.`}
                 </p>
               </div>
-
-              <div className="flex items-center gap-3 pt-2">
-                <button
-                  onClick={handleBack}
-                  className="px-5 py-2.5 border border-slate-200 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50"
-                >
-                  Geri
-                </button>
-                <button
-                  onClick={handleSend}
-                  disabled={!selectedLabId || validForSelectedLab.length === 0}
-                  className="inline-flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
-                >
-                  <Send className="w-4 h-4" />
-                  Gönder
-                </button>
-              </div>
             </div>
-          </div>
 
-          <div className="lg:col-span-4 xl:col-span-3 bg-white rounded-2xl border border-slate-100 shadow-sm p-4 h-fit">
-            <h3 className="text-sm font-semibold text-slate-800 mb-3">Seçilen Hizmetler</h3>
-            <div className="max-h-80 overflow-y-auto space-y-2">
-              {selectedServiceDetails.map(({ service, patient }) => (
-                <div key={service.id} className="p-2.5 bg-slate-50 rounded-lg border border-slate-100 text-xs">
-                  <p className="font-medium text-slate-700 truncate" title={service.name}>
-                    {service.name}
-                  </p>
-                  <p className="text-slate-500 mt-0.5">
-                    {patient.name} — {service.barcode}
-                  </p>
-                </div>
-              ))}
+            <div className="flex items-center gap-3 pt-4 border-t border-slate-100">
+              <button
+                onClick={handleBack}
+                className="px-5 py-2.5 border border-slate-200 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50"
+              >
+                Geri
+              </button>
+              <button
+                onClick={handleSend}
+                disabled={!selectedLabId || validForSelectedLab.length === 0}
+                className="inline-flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
+              >
+                <Send className="w-4 h-4" />
+                Gönder
+              </button>
             </div>
           </div>
         </div>
