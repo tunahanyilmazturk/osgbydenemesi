@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   AlertCircle,
   Filter,
@@ -7,13 +7,13 @@ import {
   Search,
   User,
 } from 'lucide-react'
-import { useProtocols } from '../../context/ProtocolsContext'
-import { usePatients } from '../../context/PatientsContext'
-import { PageHeader } from '../../components/PageHeader'
-import { useToast } from '../../context/ToastContext'
-import { EmptyState } from '../../components/ui/EmptyState'
-import { Pagination } from '../../components/ui/Pagination'
-import { nowLocalDate } from '../../utils/date'
+import { useProtocols } from '@/state/ProtocolsContext'
+import { usePatients } from '@/state/PatientsContext'
+import { PageHeader } from '@/shared/components/PageHeader'
+import { useToast } from '@/state/ToastContext'
+import { EmptyState } from '@/shared/components/ui/EmptyState'
+import { Pagination } from '@/shared/components/ui/Pagination'
+import { nowLocalDate } from '@/shared/lib/date'
 
 const ITEMS_PER_PAGE_OPTIONS = [10, 25, 50, 100]
 

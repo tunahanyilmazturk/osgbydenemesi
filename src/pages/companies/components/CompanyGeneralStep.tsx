@@ -1,7 +1,7 @@
-﻿import { Building2 } from 'lucide-react'
-import type { Company, CompanyType } from '../../../context/CompaniesContext'
-import { Input } from '../../../components/ui/Input'
-import { Select } from '../../../components/ui/Select'
+import { Building2 } from 'lucide-react'
+import type { Company, CompanyType } from '@/state/CompaniesContext'
+import { Input } from '@/shared/components/ui/Input'
+import { Select } from '@/shared/components/ui/Select'
 
 interface CompanyGeneralStepProps {
   form: Omit<Company, 'id'>

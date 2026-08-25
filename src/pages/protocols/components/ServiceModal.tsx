@@ -1,10 +1,10 @@
-﻿import { useMemo } from 'react'
+import { useMemo } from 'react'
 import { User } from 'lucide-react'
-import { useProtocols } from '../../../context/ProtocolsContext'
-import { Modal } from '../../../components/ui/Modal'
-import { ServiceSelector } from './ServiceSelector'
-import type { CompanyService } from '../../../context/CompaniesContext'
-import type { PatientDetail, Protocol, ProtocolService } from '../../../types'
+import { useProtocols } from '@/state/ProtocolsContext'
+import { Modal } from '@/shared/components/ui/Modal'
+import { ServiceSelector } from '@/pages/protocols/components/ServiceSelector'
+import type { CompanyService } from '@/state/CompaniesContext'
+import type { PatientDetail, Protocol, ProtocolService } from '@/shared/types'
 
 interface ServiceModalProps {
   isOpen: boolean

@@ -1,18 +1,17 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, Send, Users, Stethoscope, CheckCircle, FileSearch, Calendar } from 'lucide-react'
-import { usePatients } from '../../context/PatientsContext'
-import { useProtocols } from '../../context/ProtocolsContext'
-import { useCompanies } from '../../context/CompaniesContext'
-import { useExamTypes } from '../../context/ExamTypesContext'
-import { useServices } from '../../context/ServicesContext'
-import { useAuth } from '../../context/AuthContext'
-import { useConfirm } from '../../context/ConfirmContext'
-import { statusOptions } from '../../pages/lab/labUtils'
-import { defaultExternalLabs } from './mocks/externalLabsDefaults'
-import type { ExternalLab, ExternalLabSendRecord, PatientDetail, Protocol, ProtocolService } from '../../types'
+import { usePatients } from '@/state/PatientsContext'
+import { useProtocols } from '@/state/ProtocolsContext'
+import { useCompanies } from '@/state/CompaniesContext'
+import { useExamTypes } from '@/state/ExamTypesContext'
+import { useServices } from '@/state/ServicesContext'
+import { useAuth } from '@/state/AuthContext'
+import { useConfirm } from '@/state/ConfirmContext'
+import { statusOptions } from '@/pages/lab/lib/labUtils'
+import { useExternalLabsStorage } from '@/pages/external-labs/hooks/useExternalLabsStorage'
+import type { ExternalLabSendRecord, PatientDetail, Protocol, ProtocolService } from '@/shared/types'
 
-const EXTERNAL_LABS_KEY = 'cetka-external-labs'
 const SENDS_KEY = 'cetka-external-lab-sends'
 
 const today = () => {
@@ -50,19 +49,6 @@ function formatDateTime(iso?: string): string {
     hour: '2-digit',
     minute: '2-digit',
   })
-}
-
-function loadLabs(): ExternalLab[] {
-  try {
-    const raw = localStorage.getItem(EXTERNAL_LABS_KEY)
-    if (raw) {
-      const parsed = JSON.parse(raw) as ExternalLab[]
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed
-    }
-  } catch {
-    // ignore
-  }
-  return defaultExternalLabs
 }
 
 function loadSends(): ExternalLabSendRecord[] {
@@ -129,18 +115,7 @@ export function ExternalLabSendNew() {
   const [serviceStatusFilter, setServiceStatusFilter] = useState('Tümü')
   const [serviceSearch, setServiceSearch] = useState('')
 
-  // Dış lab listesini localStorage'dan canlı tut
-  const [allLabs, setAllLabs] = useState<ExternalLab[]>(loadLabs)
-
-  useEffect(() => {
-    const refreshLabs = () => setAllLabs(loadLabs())
-    window.addEventListener('focus', refreshLabs)
-    const interval = setInterval(refreshLabs, 1000)
-    return () => {
-      window.removeEventListener('focus', refreshLabs)
-      clearInterval(interval)
-    }
-  }, [])
+  const allLabs = useExternalLabsStorage()
 
   const handleProtocolDateChange = (value: string) => {
     setProtocolDate(value)
@@ -353,32 +328,28 @@ export function ExternalLabSendNew() {
   }
 
   const activeLabs = useMemo(() => allLabs.filter((lab) => lab.active), [allLabs])
+  const effectiveSelectedLabId = selectedLabId && activeLabs.some((lab) => lab.id === selectedLabId)
+    ? selectedLabId
+    : null
 
   const validForSelectedLab = useMemo(() => {
-    if (!selectedLabId) return []
+    if (!effectiveSelectedLabId) return []
     return selectedServiceDetails.filter((row) => {
       const group = groups.find((item) => item.name === row.service.group)
-      return !group?.labIds?.length || group.labIds.includes(selectedLabId)
+      return !group?.labIds?.length || group.labIds.includes(effectiveSelectedLabId)
     })
-  }, [groups, selectedLabId, selectedServiceDetails])
+  }, [effectiveSelectedLabId, groups, selectedServiceDetails])
 
   const invalidForSelectedLab = useMemo(() => {
-    if (!selectedLabId) return []
+    if (!effectiveSelectedLabId) return []
     return selectedServiceDetails.filter((row) => !validForSelectedLab.some((valid) => valid.service.id === row.service.id))
-  }, [selectedLabId, selectedServiceDetails, validForSelectedLab])
+  }, [effectiveSelectedLabId, selectedServiceDetails, validForSelectedLab])
 
   const validPatientsInServices = new Set(validForSelectedLab.map((r) => r.patient.id))
 
-  // Seçili lab artık uygun değilse sıfırla
-  useEffect(() => {
-    if (selectedLabId && activeLabs.length > 0 && !activeLabs.some((l) => l.id === selectedLabId)) {
-      setSelectedLabId(null)
-    }
-  }, [activeLabs, selectedLabId])
-
   const handleSend = async () => {
-    if (!selectedLabId || validForSelectedLab.length === 0) return
-    const lab = activeLabs.find((l) => l.id === selectedLabId)
+    if (!effectiveSelectedLabId || validForSelectedLab.length === 0) return
+    const lab = activeLabs.find((l) => l.id === effectiveSelectedLabId)
     if (!lab) return
 
     if (invalidForSelectedLab.length > 0) {
@@ -452,7 +423,7 @@ export function ExternalLabSendNew() {
   }, [candidateServices])
 
   return (
-    <div className="space-y-4 h-full flex flex-col">
+    <div className="viewport-page">
       {/* Başlık */}
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-slate-800">Dış Laboratuvar</h1>
@@ -960,7 +931,7 @@ export function ExternalLabSendNew() {
                 <p className="text-xs text-slate-400 text-center py-8">Seçili hizmet yok.</p>
               ) : (
                 selectedServiceDetails.map(({ service, patient }) => {
-                  const isValid = !selectedLabId || validForSelectedLab.some((v) => v.service.id === service.id)
+                  const isValid = !effectiveSelectedLabId || validForSelectedLab.some((v) => v.service.id === service.id)
                   return (
                     <div
                       key={service.id}
@@ -1027,7 +998,7 @@ export function ExternalLabSendNew() {
               <div>
                 <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Dış Laboratuvar Seçimi</label>
                 <select
-                  value={selectedLabId ?? ''}
+                  value={effectiveSelectedLabId ?? ''}
                   onChange={(e) => setSelectedLabId(Number(e.target.value) || null)}
                   className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 focus:outline-none focus:border-blue-500"
                 >
@@ -1042,7 +1013,7 @@ export function ExternalLabSendNew() {
 
               <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
                 <p className="text-sm text-blue-800 font-medium">
-                  {selectedLabId && activeLabs.find((l) => l.id === selectedLabId)?.name} laboratuvarına{' '}
+                  {effectiveSelectedLabId && activeLabs.find((l) => l.id === effectiveSelectedLabId)?.name} laboratuvarına{' '}
                   {validForSelectedLab.length} hizmet gönderilecek.
                   {invalidForSelectedLab.length > 0 && ` ${invalidForSelectedLab.length} hizmet bu lab ile gönderilmeyecek.`}
                 </p>
@@ -1058,7 +1029,7 @@ export function ExternalLabSendNew() {
               </button>
               <button
                 onClick={handleSend}
-                disabled={!selectedLabId || validForSelectedLab.length === 0}
+                disabled={!effectiveSelectedLabId || validForSelectedLab.length === 0}
                 className="inline-flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
               >
                 <Send className="w-4 h-4" />

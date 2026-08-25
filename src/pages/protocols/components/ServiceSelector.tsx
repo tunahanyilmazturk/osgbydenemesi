@@ -1,10 +1,9 @@
-﻿import { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Building2, CheckCircle2, FlaskConical, Package, Plus, Search, Trash2 } from 'lucide-react'
-import { useServices } from '../../../context/ServicesContext'
-import { Input } from '../../../components/ui/Input'
-import type { CompanyService } from '../../../context/CompaniesContext'
-import type { ProtocolService, ServiceCatalogItem, ServicePackage } from '../../../types'
-import { nowLocalDateTime } from '../../../utils/date'
+import { useServices } from '@/state/ServicesContext'
+import type { CompanyService } from '@/state/CompaniesContext'
+import type { ProtocolService, ServiceCatalogItem, ServicePackage } from '@/shared/types'
+import { nowLocalDateTime } from '@/shared/lib/date'
 
 type SelectorTab = 'company' | 'packages' | 'all'
 
@@ -42,13 +41,6 @@ export function ServiceSelector({
   const { catalog, packages } = useServices()
   const [tab, setTab] = useState<SelectorTab>('company')
   const [search, setSearch] = useState('')
-  const [showAddForm, setShowAddForm] = useState(false)
-  const [newService, setNewService] = useState({
-    name: '',
-    group: 'Biyokimya',
-    price: '',
-    vatRate: '0',
-  })
 
   const totalAmount = useMemo(
     () => selectedServices.reduce((sum, s) => sum + s.totalPrice, 0),
@@ -78,16 +70,17 @@ export function ServiceSelector({
 
     if (tab === 'company') {
       list = companyServices
-        .map((cs) => catalog.find((c) => c.id === cs.serviceId))
+        .map((cs) => catalog.find((c) => c.id === cs.serviceId && c.isActive))
         .filter(Boolean) as ServiceCatalogItem[]
     } else if (tab === 'packages') {
       list = packages.filter(
-        (p) =>
+        (p) => p.services.some((ps) => catalog.some((service) => service.id === ps.serviceId && service.isActive)) && (
           p.companies.length === 0 ||
           p.companies.some((comp) => comp.toLowerCase() === company.toLowerCase())
+        )
       )
     } else {
-      list = [...catalog]
+      list = catalog.filter((service) => service.isActive)
     }
 
     // Zaten eklenmiş hizmetleri/paketleri listeden gizle
@@ -126,7 +119,7 @@ export function ServiceSelector({
     } else {
       const hasCustomPricing = item.services.some((ps) => ps.customPrice !== undefined || ps.customVatRate !== undefined)
       item.services.forEach((ps) => {
-        const service = catalog.find((c) => c.id === ps.serviceId)
+        const service = catalog.find((c) => c.id === ps.serviceId && c.isActive)
         if (service && !selectedNames.has(service.name.toLowerCase())) {
           const companyService = companyServiceMap.get(service.id)
           let price: number
@@ -167,22 +160,6 @@ export function ServiceSelector({
         })
       }
     }
-  }
-
-  const handleAddCustom = (e: React.FormEvent) => {
-    e.preventDefault()
-    onAddService({
-      code: 0,
-      name: newService.name,
-      group: newService.group,
-      status: 'İşlem Bekliyor',
-      price: Number(newService.price) || 0,
-      vatRate: Number(newService.vatRate) || 0,
-      recordedBy: 'Kullanıcı',
-      processDate: nowLocalDateTime(),
-    })
-    setNewService({ name: '', group: 'Biyokimya', price: '', vatRate: '0' })
-    setShowAddForm(false)
   }
 
   const handlePriceChange = (serviceId: number, price: number) => {
@@ -309,68 +286,6 @@ export function ServiceSelector({
           )}
         </div>
 
-        {/* Manuel Hizmet Ekleme */}
-        <div className="border-t border-slate-200 shrink-0">
-          {!showAddForm ? (
-            <button
-              onClick={() => setShowAddForm(true)}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 w-full transition-colors"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Yeni Hizmet Ekle (Manuel)
-            </button>
-          ) : (
-            <form onSubmit={handleAddCustom} className="p-2 space-y-1.5 bg-slate-50">
-              <Input
-                size="sm"
-                label="Hizmet Adı"
-                value={newService.name}
-                onChange={(e) => setNewService({ ...newService, name: e.target.value })}
-                required
-              />
-              <div className="grid grid-cols-3 gap-1.5">
-                <Input
-                  size="sm"
-                  label="Grup"
-                  value={newService.group}
-                  onChange={(e) => setNewService({ ...newService, group: e.target.value })}
-                  required
-                />
-                <Input
-                  size="sm"
-                  label="Fiyat"
-                  type="number"
-                  value={newService.price}
-                  onChange={(e) => setNewService({ ...newService, price: e.target.value })}
-                  required
-                />
-                <Input
-                  size="sm"
-                  label="KDV %"
-                  type="number"
-                  value={newService.vatRate}
-                  onChange={(e) => setNewService({ ...newService, vatRate: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="flex gap-2">
-                <button
-                  type="submit"
-                  className="flex-1 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
-                >
-                  Ekle
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowAddForm(false)}
-                  className="flex-1 py-1.5 text-xs font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-100"
-                >
-                  Vazgeç
-                </button>
-              </div>
-            </form>
-          )}
-        </div>
       </div>
 
       {/* Sağ: Seçili Hizmetler + Fiyat Düzenleme */}

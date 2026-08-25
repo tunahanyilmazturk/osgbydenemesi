@@ -1,0 +1,7 @@
+export type * from './examination'
+export type * from './external-lab'
+export type * from './patient'
+export type * from './protocol'
+export type * from './service'
+export type * from './ui'
+export type * from './web-result'

@@ -1,10 +1,10 @@
-﻿import { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Building2, Check, Edit2, Mail, MapPin, Phone, Plus, Search, Trash2, User, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { useCompanies, type CompanyType, type DangerClass, type PaymentType } from '../../context/CompaniesContext'
-import { useConfirm } from '../../context/ConfirmContext'
-import { PageHeader } from '../../components/PageHeader'
-import { Select } from '../../components/ui/Select'
+import { useCompanies, type CompanyType, type DangerClass, type PaymentType } from '@/state/CompaniesContext'
+import { useConfirm } from '@/state/ConfirmContext'
+import { PageHeader } from '@/shared/components/PageHeader'
+import { Select } from '@/shared/components/ui/Select'
 
 const companyTypes: CompanyType[] = ['Ana Firma', 'Alt İşveren', 'Müşteri', 'Tedarikçi']
 
@@ -74,7 +74,7 @@ export function Companies() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="viewport-page">
       <PageHeader
         title="Firma Tanımları"
         subtitle="Protokol ve raporlarda kullanılacak firmaları buradan yönetin."
@@ -142,9 +142,9 @@ export function Companies() {
       </div>
 
       {/* Companies Table */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex-1 min-h-0 flex flex-col">
+        <div className="surface-scroll">
+          <table className="w-full text-left text-sm sticky-table-header">
             <thead className="bg-slate-50 text-slate-500">
               <tr>
                 <th className="px-4 py-3 font-medium">Firma</th>

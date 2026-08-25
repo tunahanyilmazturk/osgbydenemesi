@@ -1,12 +1,12 @@
-﻿import { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { ArrowLeft, Building2, Check, Package, Percent, Plus, RotateCcw, Save, Search, Tag, X } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useCompanies } from '../../context/CompaniesContext'
-import { useServices, getGroupColor } from '../../context/ServicesContext'
-import { useToast } from '../../context/ToastContext'
-import { Input } from '../../components/ui/Input'
-import { PageHeader } from '../../components/PageHeader'
-import type { PackageService, ServiceCatalogItem } from '../../types'
+import { useCompanies } from '@/state/CompaniesContext'
+import { useServices, getGroupColor } from '@/state/ServicesContext'
+import { useToast } from '@/state/ToastContext'
+import { Input } from '@/shared/components/ui/Input'
+import { PageHeader } from '@/shared/components/PageHeader'
+import type { PackageService, ServiceCatalogItem } from '@/shared/types'
 
 const emptyForm = {
   name: '',
@@ -50,6 +50,7 @@ export function NewPackage() {
   const filteredCatalog = useMemo(() => {
     const term = search.trim().toLowerCase()
     return catalog.filter((c) => {
+      if (!c.isActive) return false
       const matchesSearch = !term || c.name.toLowerCase().includes(term)
       const matchesGroup = groupFilter === 'Tümü' || c.group === groupFilter
       return matchesSearch && matchesGroup
@@ -209,6 +210,11 @@ export function NewPackage() {
       showToast('warning', 'Paket adı gerekli', 'Lütfen paket için bir ad girin.')
       return
     }
+    const normalizedName = form.name.trim().toLocaleLowerCase('tr-TR')
+    if (packages.some((item) => item.id !== existingPackage?.id && item.name.trim().toLocaleLowerCase('tr-TR') === normalizedName)) {
+      showToast('warning', 'Paket zaten mevcut', 'Aynı adla ikinci bir paket oluşturamazsınız.')
+      return
+    }
     if (isEditing && existingPackage) {
       updatePackage(existingPackage.id, form)
       showToast('success', 'Paket güncellendi', `"${form.name}" paketi başarıyla güncellendi.`)
@@ -290,6 +296,7 @@ export function NewPackage() {
                         <button
                           type="button"
                           onClick={() => removeCompany(name)}
+                          aria-label={`${name} firmasını paketten çıkar`}
                           className="hover:bg-blue-200 rounded-full p-0.5"
                         >
                           <X className="w-2.5 h-2.5" />
@@ -651,6 +658,7 @@ export function NewPackage() {
                             <button
                               type="button"
                               onClick={() => toggleService(service.id)}
+                              aria-label={`${service.name} hizmetini paketten çıkar`}
                               className="p-1 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-md shrink-0"
                             >
                               <X className="w-3.5 h-3.5" />

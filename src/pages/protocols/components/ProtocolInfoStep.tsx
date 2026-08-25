@@ -1,9 +1,9 @@
-﻿import { Building2 } from 'lucide-react'
-import type { Company } from '../../../context/CompaniesContext'
-import type { ExamType } from '../../../context/ExamTypesContext'
-import { Input } from '../../../components/ui/Input'
-import { Select } from '../../../components/ui/Select'
-import { CompanySelect } from '../../../components/ui/CompanySelect'
+import { Building2 } from 'lucide-react'
+import type { Company } from '@/state/CompaniesContext'
+import type { ExamType } from '@/state/ExamTypesContext'
+import { Input } from '@/shared/components/ui/Input'
+import { Select } from '@/shared/components/ui/Select'
+import { CompanySelect } from '@/shared/components/ui/CompanySelect'
 
 interface ProtocolForm {
   protocolDate: string

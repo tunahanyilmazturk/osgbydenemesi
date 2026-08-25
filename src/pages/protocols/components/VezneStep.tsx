@@ -1,10 +1,11 @@
-﻿import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { AlertCircle, Plus, Trash2, Wallet } from 'lucide-react'
-import { useToast } from '../../../context/ToastContext'
-import { Tooltip } from '../../../components/ui/Tooltip'
-import { nowLocalDateTime } from '../../../utils/date'
+import { useToast } from '@/state/ToastContext'
+import { Tooltip } from '@/shared/components/ui/Tooltip'
+import { nowLocalDateTime } from '@/shared/lib/date'
+import { PAYMENT_TYPES } from '@/shared/lib/payments'
 
-const paymentTypes = ['Nakit', 'Kart', 'Kuruma Fatura', 'İndirim', 'Eft/Havale']
+const paymentTypes = PAYMENT_TYPES
 
 export interface LocalPayment {
   id: number
@@ -74,6 +75,10 @@ export function VezneStep({
       showToast('warning', 'Geçersiz tutar', 'Tutar 0\'dan büyük olmalıdır.')
       return
     }
+    if (amount > remaining) {
+      showToast('warning', 'Tutar kalan bakiyeyi aşıyor', `En fazla ₺${remaining.toFixed(2)} girebilirsiniz.`)
+      return
+    }
     onAddPayment({
       paymentDate: nowLocalDateTime(),
       paymentType: form.paymentType,
@@ -93,8 +98,8 @@ export function VezneStep({
 
   const handleRoundTotal = () => {
     if (remaining <= 0) return
-    const rounded = Math.round(remaining)
-    const diff = Number((rounded - remaining).toFixed(2))
+    const rounded = Math.floor(remaining)
+    const diff = Number((remaining - rounded).toFixed(2))
     if (diff === 0) {
       showToast('info', 'Yuvarlama gerekmiyor', 'Tutar zaten yuvarlak.')
       return
@@ -102,11 +107,11 @@ export function VezneStep({
     onAddPayment({
       paymentDate: nowLocalDateTime(),
       paymentType: 'İndirim',
-      amount: Math.abs(diff),
-      description: diff < 0 ? 'Yuvarlama (eklenecek)' : 'Yuvarlama indirimi',
+      amount: diff,
+      description: 'Yuvarlama indirimi',
       recordedBy: 'Kullanıcı',
     })
-    showToast('success', 'Yuvarlama uygulandı', `₺${Math.abs(diff).toFixed(2)} indirim`)
+    showToast('success', 'Yuvarlama uygulandı', `₺${diff.toFixed(2)} indirim`)
   }
 
   const handleDeferRemaining = () => {

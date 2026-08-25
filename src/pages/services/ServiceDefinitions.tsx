@@ -1,15 +1,15 @@
-﻿import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Check, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Copy, Edit2, Folder, Plus, Save, Search, Settings2, Trash2, ArrowUpDown, ArrowUp, ArrowDown, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { useServices, getGroupColor, DEFAULT_VAT_RATE } from '../../context/ServicesContext'
-import { useToast } from '../../context/ToastContext'
-import { useConfirm } from '../../context/ConfirmContext'
-import { Input } from '../../components/ui/Input'
-import { Modal } from '../../components/ui/Modal'
-import { PageHeader } from '../../components/PageHeader'
-import { Select } from '../../components/ui/Select'
-import { defaultExternalLabs } from '../external-labs/mocks/externalLabsDefaults'
-import type { ExternalLab, ServiceCatalogItem, ServiceGroup } from '../../types'
+import { useServices, getGroupColor, DEFAULT_VAT_RATE } from '@/state/ServicesContext'
+import { useToast } from '@/state/ToastContext'
+import { useConfirm } from '@/state/ConfirmContext'
+import { Input } from '@/shared/components/ui/Input'
+import { Modal } from '@/shared/components/ui/Modal'
+import { PageHeader } from '@/shared/components/PageHeader'
+import { Select } from '@/shared/components/ui/Select'
+import { useExternalLabsStorage } from '@/pages/external-labs/hooks/useExternalLabsStorage'
+import type { ServiceCatalogItem, ServiceGroup } from '@/shared/types'
 
 const availableColors = ['blue', 'red', 'violet', 'amber', 'emerald', 'slate', 'pink', 'cyan']
 
@@ -25,19 +25,6 @@ const emptyForm: Omit<ServiceCatalogItem, 'id'> = {
   referenceRange: '',
   labIds: [],
   tubeTypeId: null,
-}
-
-function loadExternalLabs(): ExternalLab[] {
-  try {
-    const raw = localStorage.getItem('cetka-external-labs')
-    if (raw) {
-      const parsed = JSON.parse(raw) as ExternalLab[]
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed
-    }
-  } catch {
-    // ignore
-  }
-  return defaultExternalLabs
 }
 
 type SortField = 'code' | 'name' | 'group' | 'price' | 'vatRate' | 'total'
@@ -73,20 +60,9 @@ export function ServiceDefinitions() {
   // Group form
   const [groupForm, setGroupForm] = useState({ name: '', color: 'blue', labIds: [] as number[], defaultTubeTypeId: null as number | null })
   const [editingGroupId, setEditingGroupId] = useState<number | null>(null)
-  const [externalLabs, setExternalLabs] = useState<ExternalLab[]>(defaultExternalLabs)
+  const externalLabs = useExternalLabsStorage()
 
   const groupNames = useMemo(() => groups.map((g) => g.name), [groups])
-
-  useEffect(() => {
-    const refresh = () => setExternalLabs(loadExternalLabs())
-    refresh()
-    window.addEventListener('focus', refresh)
-    const interval = setInterval(refresh, 1000)
-    return () => {
-      window.removeEventListener('focus', refresh)
-      clearInterval(interval)
-    }
-  }, [])
 
   const filteredCatalog = useMemo(() => {
     const term = search.trim().toLowerCase()
@@ -132,11 +108,6 @@ export function ServiceDefinitions() {
 
     return items
   }, [catalog, search, groupFilter, statusFilter, priceMin, priceMax, sortBy, sortOrder])
-
-  // Pagination: reset on filter/sort/pageSize change
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [search, groupFilter, statusFilter, priceMin, priceMax, sortBy, sortOrder, itemsPerPage])
 
   const totalPages = useMemo(() => Math.max(1, Math.ceil(filteredCatalog.length / itemsPerPage)), [filteredCatalog.length, itemsPerPage])
   const safePage = Math.min(currentPage, totalPages)
@@ -191,6 +162,10 @@ export function ServiceDefinitions() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (form.code <= 0 || !form.name.trim()) return
+    if (catalog.some((item) => item.id !== editingId && item.code === form.code)) {
+      showToast('warning', 'Hizmet kodu kullanılıyor', `${form.code} koduyla kayıtlı başka bir hizmet bulunuyor.`)
+      return
+    }
     if (editingId) {
       updateCatalogItem(editingId, form)
       showToast('success', 'Hizmet güncellendi', `"${form.name}" hizmeti kaydedildi.`)
@@ -255,6 +230,7 @@ export function ServiceDefinitions() {
   const formTotal = form.price * (1 + form.vatRate / 100)
 
   const handleSort = (field: SortField) => {
+    setCurrentPage(1)
     if (sortBy === field) {
       setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'))
     } else {
@@ -264,6 +240,7 @@ export function ServiceDefinitions() {
   }
 
   const clearFilters = () => {
+    setCurrentPage(1)
     setSearch('')
     setGroupFilter('Tümü')
     setStatusFilter('Tümü')
@@ -305,6 +282,11 @@ export function ServiceDefinitions() {
   const handleGroupSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!groupForm.name.trim()) return
+    const normalizedName = groupForm.name.trim().toLocaleLowerCase('tr-TR')
+    if (groups.some((group) => group.id !== editingGroupId && group.name.trim().toLocaleLowerCase('tr-TR') === normalizedName)) {
+      showToast('warning', 'Kategori zaten mevcut', 'Aynı adla ikinci bir kategori oluşturamazsınız.')
+      return
+    }
     if (editingGroupId) {
       updateGroup(editingGroupId, { name: groupForm.name.trim(), color: groupForm.color, labIds: groupForm.labIds, defaultTubeTypeId: groupForm.defaultTubeTypeId })
       showToast('success', 'Kategori güncellendi', `"${groupForm.name.trim()}" kategorisi kaydedildi.`)
@@ -331,7 +313,7 @@ export function ServiceDefinitions() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="viewport-page">
       <PageHeader
         title="Hizmet Tanımları"
         subtitle="Tetkik, test ve hizmet kataloğunu buradan yönetin."
@@ -365,7 +347,7 @@ export function ServiceDefinitions() {
               type="text"
               placeholder="Hizmet adı veya kod ile ara..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setCurrentPage(1) }}
               className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
             />
           </div>
@@ -374,7 +356,7 @@ export function ServiceDefinitions() {
               size="sm"
               label="Grup"
               value={groupFilter}
-              onChange={(e) => setGroupFilter(e.target.value)}
+              onChange={(e) => { setGroupFilter(e.target.value); setCurrentPage(1) }}
               options={['Tümü', ...groupNames].map((g) => ({ value: g, label: g }))}
             />
           </div>
@@ -383,7 +365,7 @@ export function ServiceDefinitions() {
               size="sm"
               label="Durum"
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as 'Tümü' | 'Aktif' | 'Pasif')}
+              onChange={(e) => { setStatusFilter(e.target.value as 'Tümü' | 'Aktif' | 'Pasif'); setCurrentPage(1) }}
               options={[
                 { value: 'Tümü', label: 'Tümü' },
                 { value: 'Aktif', label: 'Aktif' },
@@ -399,7 +381,7 @@ export function ServiceDefinitions() {
               step="0.01"
               placeholder="0"
               value={priceMin}
-              onChange={(e) => setPriceMin(e.target.value)}
+              onChange={(e) => { setPriceMin(e.target.value); setCurrentPage(1) }}
               className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
             />
           </div>
@@ -411,7 +393,7 @@ export function ServiceDefinitions() {
               step="0.01"
               placeholder="∞"
               value={priceMax}
-              onChange={(e) => setPriceMax(e.target.value)}
+              onChange={(e) => { setPriceMax(e.target.value); setCurrentPage(1) }}
               className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
             />
           </div>
@@ -421,7 +403,7 @@ export function ServiceDefinitions() {
                 size="sm"
                 label="Sırala"
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as SortField)}
+                onChange={(e) => { setSortBy(e.target.value as SortField); setCurrentPage(1) }}
                 options={[
                   { value: 'name', label: 'Hizmet Adı' },
                   { value: 'group', label: 'Grup' },
@@ -433,7 +415,7 @@ export function ServiceDefinitions() {
             </div>
             <button
               type="button"
-              onClick={() => setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'))}
+              onClick={() => { setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc')); setCurrentPage(1) }}
               className="p-2.5 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors"
               title={sortOrder === 'asc' ? 'Artan' : 'Azalan'}
             >
@@ -458,9 +440,9 @@ export function ServiceDefinitions() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex-1 min-h-0 flex flex-col">
+        <div className="surface-scroll">
+          <table className="w-full text-left text-sm sticky-table-header">
             <thead className="bg-slate-50 text-slate-500">
               <tr>
                 <th className="px-6 py-3 font-medium w-24">
@@ -629,7 +611,7 @@ export function ServiceDefinitions() {
               Sayfa başına
               <select
                 value={itemsPerPage}
-                onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                onChange={(e) => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1) }}
                 className="px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10"
               >
                 <option value={10}>10</option>

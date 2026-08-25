@@ -1,10 +1,12 @@
-﻿import { useRef, useState } from 'react'
-import { ArrowLeft, Camera, Save, User, X } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { ArrowLeft, Camera, Save, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { usePatients } from '../../context/PatientsContext'
-import { Input } from '../../components/ui/Input'
-import { PageHeader } from '../../components/PageHeader'
-import { Select } from '../../components/ui/Select'
+import { usePatients } from '@/state/PatientsContext'
+import { Input } from '@/shared/components/ui/Input'
+import { PageHeader } from '@/shared/components/PageHeader'
+import { PatientAvatar } from '@/shared/components/ui/PatientAvatar'
+import { Select } from '@/shared/components/ui/Select'
+import { useToast } from '@/state/ToastContext'
 
 const initialForm = {
   firstName: '',
@@ -24,11 +26,13 @@ const initialForm = {
   type: 'İşe Giriş',
   status: 'Bekliyor',
   notes: '',
+  photo: '',
 }
 
 export function NewPatient() {
   const navigate = useNavigate()
-  const { addPatient } = usePatients()
+  const { patients, addPatient } = usePatients()
+  const { showToast } = useToast()
   const [form, setForm] = useState(initialForm)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -39,9 +43,25 @@ export function NewPatient() {
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      setPhotoPreview(URL.createObjectURL(file))
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      showToast('warning', 'Geçersiz dosya', 'Lütfen bir görsel dosyası seçin.')
+      e.target.value = ''
+      return
     }
+    if (file.size > 1_500_000) {
+      showToast('warning', 'Görsel çok büyük', 'Hasta fotoğrafı en fazla 1,5 MB olabilir.')
+      e.target.value = ''
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = () => {
+      const photo = typeof reader.result === 'string' ? reader.result : ''
+      setPhotoPreview(photo)
+      update('photo', photo)
+    }
+    reader.onerror = () => showToast('error', 'Görsel okunamadı', 'Lütfen başka bir dosya deneyin.')
+    reader.readAsDataURL(file)
   }
 
   const triggerPhotoUpload = () => {
@@ -50,10 +70,25 @@ export function NewPatient() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    const name = `${form.firstName} ${form.lastName}`.trim()
+    const tc = form.tc.replace(/\D/g, '')
+    if (tc.length !== 11) {
+      showToast('warning', 'Geçersiz T.C. Kimlik No', 'T.C. Kimlik No 11 rakamdan oluşmalıdır.')
+      return
+    }
+    if (patients.some((patient) => patient.tc === tc)) {
+      showToast('warning', 'Hasta zaten kayıtlı', 'Bu T.C. Kimlik No ile kayıtlı bir hasta bulunuyor.')
+      return
+    }
+    const firstName = form.firstName.trim()
+    const lastName = form.lastName.trim()
+    const name = `${firstName} ${lastName}`
     const newId = addPatient({
       ...form,
+      tc,
+      firstName,
+      lastName,
       name,
+      email: form.email.trim().toLowerCase(),
     })
     navigate(`/hasta-kayit/protokol/${newId}/yeni`)
   }
@@ -61,7 +96,7 @@ export function NewPatient() {
   const cancel = () => navigate('/hasta-kayit')
 
   return (
-    <div>
+    <div className="viewport-page">
       <PageHeader
         title="Yeni Hasta Kaydı"
         subtitle="Tüm alanları eksiksiz doldurunuz."
@@ -87,7 +122,7 @@ export function NewPatient() {
         }
       />
 
-      <form id="patient-form" onSubmit={handleSubmit} className="space-y-4">
+      <form id="patient-form" onSubmit={handleSubmit} className="surface-scroll space-y-4 pr-1 pb-1">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Kimlik Bilgileri */}
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
@@ -96,7 +131,7 @@ export function NewPatient() {
               Kimlik Bilgileri
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <Input size="sm" label="TC Kimlik No" value={form.tc} onChange={(e) => update('tc', e.target.value)} placeholder="12345678901" maxLength={11} required />
+              <Input size="sm" label="TC Kimlik No" inputMode="numeric" pattern="[0-9]{11}" value={form.tc} onChange={(e) => update('tc', e.target.value.replace(/\D/g, '').slice(0, 11))} placeholder="12345678901" maxLength={11} required />
               <Input size="sm" label="Sicil No" value={form.registrationNo} onChange={(e) => update('registrationNo', e.target.value)} placeholder="Sicil numarası" />
               <Input size="sm" label="Adı" value={form.firstName} onChange={(e) => update('firstName', e.target.value)} placeholder="Adı" required />
               <Input size="sm" label="Soyadı" value={form.lastName} onChange={(e) => update('lastName', e.target.value)} placeholder="Soyadı" required />
@@ -117,23 +152,7 @@ export function NewPatient() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Avatar */}
               <div className="flex flex-col items-center justify-start gap-3">
-                <div
-                  className={`w-28 h-28 rounded-2xl border-2 flex items-center justify-center overflow-hidden transition-colors ${
-                    form.gender === 'Kadın'
-                      ? 'bg-pink-100 text-pink-600 border-pink-200'
-                      : 'bg-blue-100 text-blue-600 border-blue-200'
-                  }`}
-                >
-                  {photoPreview ? (
-                    <img
-                      src={photoPreview}
-                      alt="Hasta fotoğrafı"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <User className="w-14 h-14" />
-                  )}
-                </div>
+                <PatientAvatar gender={form.gender} name={`${form.firstName} ${form.lastName}`.trim()} photoSrc={photoPreview} size="2xl" />
                 <input
                   ref={fileInputRef}
                   type="file"

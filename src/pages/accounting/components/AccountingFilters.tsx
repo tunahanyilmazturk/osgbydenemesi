@@ -1,5 +1,5 @@
-﻿import { Filter, Search } from 'lucide-react'
-import { FilterResetButton } from '../../../components/ui/FilterResetButton'
+import { Filter, Search } from 'lucide-react'
+import { FilterResetButton } from '@/shared/components/ui/FilterResetButton'
 
 interface AccountingFiltersProps {
   startDate: string

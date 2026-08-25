@@ -1,12 +1,14 @@
-﻿import { useMemo, useRef, useState } from 'react'
-import { Save, Trash2, UserPlus, X, Stethoscope, Upload, Pencil, Trash, UserCog } from 'lucide-react'
-import { PageHeader } from '../../components/PageHeader'
-import { SearchableSelect } from '../../components/ui/SearchableSelect'
-import { loadDoctors, saveDoctors, TEST_TYPES, type Doctor, type DoctorAssistant, type TestType } from '../../utils/doctors'
-import { useServices } from '../../context/ServicesContext'
-import { useAuth } from '../../context/AuthContext'
-import { useToast } from '../../context/ToastContext'
-import { useConfirm } from '../../context/ConfirmContext'
+import { useMemo, useRef, useState } from 'react'
+import { Building2, Save, Trash2, UserPlus, X, Stethoscope, Upload, Pencil, Trash, UserCog } from 'lucide-react'
+import { PageHeader } from '@/shared/components/PageHeader'
+import { SearchableSelect } from '@/shared/components/ui/SearchableSelect'
+import { loadDoctors, saveDoctors, type Doctor, type DoctorAssistant, type TestType } from '@/shared/lib/doctors'
+import { isSameServiceName } from '@/shared/lib/specialServices'
+import { useServices } from '@/state/ServicesContext'
+import { useAuth } from '@/state/AuthContext'
+import { useToast } from '@/state/ToastContext'
+import { useConfirm } from '@/state/ConfirmContext'
+import { InstitutionStampsTab } from '@/pages/doctors/components/InstitutionStampsTab'
 
 // Test türü etiketini olduğu gibi göster — hizmet tanımlarıyla birebir aynı olmalı
 function displayTestLabel(testType: string): string {
@@ -40,17 +42,18 @@ const DOCTOR_TITLES = [
 const EMPTY_DOCTOR: Omit<Doctor, 'id'> = {
   name: '',
   title: '',
-  testType: 'GÖZ TARAMASI (otorefraktometre)',
+  testType: '',
   stamp: '',
   assistants: [],
 }
 
 const EMPTY_ASSISTANT: Omit<DoctorAssistant, 'id'> = {
   userId: '',
-  testType: 'İşitme Testi (ODYOMETRİ)',
+  testType: '',
 }
 
 export function Doctors() {
+  const [activeTab, setActiveTab] = useState<'doctors' | 'institution-stamps'>('doctors')
   const [doctors, setDoctors] = useState<Doctor[]>(loadDoctors())
   const { showToast } = useToast()
   const confirmDialog = useConfirm()
@@ -65,13 +68,15 @@ export function Doctors() {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const editFileRef = useRef<HTMLInputElement | null>(null)
 
-  // Dinamik test türleri — hizmet kataloğundan + sabit türler (tekrarsız)
-  const availableTestTypes = useMemo(() => {
-    const serviceNames = catalog
-      .map((item) => item.name)
-      .filter((n): n is string => typeof n === 'string' && n.trim().length > 0)
-    return Array.from(new Set([...serviceNames, ...TEST_TYPES]))
+  // Hizmet Tanımları kataloğundaki güncel hizmet/test adları.
+  const catalogServiceNames = useMemo(() => {
+    return Array.from(new Set(catalog
+      .filter((item) => item.isActive)
+      .map((item) => item.name.trim())
+      .filter((name): name is string => typeof name === 'string' && name.trim().length > 0)))
   }, [catalog])
+
+  const availableTestTypes = catalogServiceNames
 
   // Asistan yönetimi — hangi doktora asistan ekleniyor
   const [assistantModalDoctorId, setAssistantModalDoctorId] = useState<string | null>(null)
@@ -93,7 +98,7 @@ export function Doctors() {
       return
     }
     // Aynı test türüne başka doktor atanmış mı? (tek persist ile çöz)
-    const existing = doctors.find((d) => d.testType === newDoctor.testType)
+    const existing = doctors.find((d) => isSameServiceName(d.testType, newDoctor.testType))
     let baseList = doctors
     if (existing) {
       const ok = await confirmDialog({
@@ -144,8 +149,8 @@ export function Doctors() {
     }
     // Test türü değiştiyse çakışma kontrolü
     const current = doctors.find((d) => d.id === editingId)
-    if (current && current.testType !== editDoctor.testType) {
-      const conflict = doctors.find((d) => d.id !== editingId && d.testType === editDoctor.testType)
+    if (current && !isSameServiceName(current.testType, editDoctor.testType)) {
+      const conflict = doctors.find((d) => d.id !== editingId && isSameServiceName(d.testType, editDoctor.testType))
       if (conflict) {
         const ok = await confirmDialog({
           title: 'Üzerine Yazılsın mı?',
@@ -273,11 +278,11 @@ export function Doctors() {
   }
 
   return (
-    <div className="space-y-4 h-full flex flex-col min-h-0">
+    <div className="viewport-page">
       <PageHeader
         title="Doktor Tanımları"
-        subtitle="Doktorları yönetin, kaşe yükleyin ve test türleriyle eşleyin."
-        action={
+        subtitle={activeTab === 'doctors' ? 'Doktorları yönetin, kaşe yükleyin ve test türleriyle eşleyin.' : 'Kurum kaşelerini yalnızca seçtiğiniz hizmet ve test raporlarında kullanın.'}
+        action={activeTab === 'doctors' ? (
           <button
             onClick={() => setShowAdd(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
@@ -285,9 +290,15 @@ export function Doctors() {
             <UserPlus className="w-3.5 h-3.5" />
             Yeni Doktor
           </button>
-        }
+        ) : undefined}
       />
 
+      <div className="flex w-fit items-center gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
+        <button type="button" onClick={() => setActiveTab('doctors')} className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition ${activeTab === 'doctors' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}><Stethoscope className="h-3.5 w-3.5" /> Doktorlar ve Asistanlar</button>
+        <button type="button" onClick={() => setActiveTab('institution-stamps')} className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition ${activeTab === 'institution-stamps' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}><Building2 className="h-3.5 w-3.5" /> Kurum Kaşeleri</button>
+      </div>
+
+      {activeTab === 'doctors' ? <>
       {/* Doktor Listesi */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex-1 min-h-0 overflow-y-auto">
         {doctors.length === 0 ? (
@@ -877,6 +888,7 @@ export function Doctors() {
           </div>
         </div>
       )}
+      </> : <InstitutionStampsTab testTypes={catalogServiceNames} />}
     </div>
   )
 }

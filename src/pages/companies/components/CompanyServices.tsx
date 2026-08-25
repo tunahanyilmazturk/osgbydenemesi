@@ -1,9 +1,9 @@
-﻿import { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { ArrowDownUp, Plus, Search, Tag, Trash2 } from 'lucide-react'
-import type { Company, CompanyService } from '../../../context/CompaniesContext'
-import { useConfirm } from '../../../context/ConfirmContext'
-import { getGroupColor } from '../../../context/ServicesContext'
-import type { ServiceCatalogItem, ServiceGroup } from '../../../types'
+import type { Company, CompanyService } from '@/state/CompaniesContext'
+import { useConfirm } from '@/state/ConfirmContext'
+import { getGroupColor } from '@/state/ServicesContext'
+import type { ServiceCatalogItem, ServiceGroup } from '@/shared/types'
 
 interface CompanyServicesProps {
   form: Omit<Company, 'id'>
@@ -21,10 +21,11 @@ export function CompanyServices({ form, setForm, catalog, groups }: CompanyServi
   const [bulkPrice, setBulkPrice] = useState('')
 
   const groupNames = useMemo(() => groups.map((g) => g.name), [groups])
+  const activeCatalog = useMemo(() => catalog.filter((item) => item.isActive), [catalog])
 
   const filteredCatalog = useMemo(() => {
     const term = serviceSearch.trim().toLowerCase()
-    const list = catalog.filter((c) => {
+    const list = activeCatalog.filter((c) => {
       const matchesSearch = !term || c.name.toLowerCase().includes(term)
       const matchesGroup = serviceGroupFilter === 'Tümü' || c.group === serviceGroupFilter
       const notAdded = !form.companyServices.some((cs) => cs.serviceId === c.id)
@@ -36,7 +37,7 @@ export function CompanyServices({ form, setForm, catalog, groups }: CompanyServi
       list.sort((a, b) => a.name.localeCompare(b.name, 'tr'))
     }
     return list
-  }, [catalog, serviceSearch, serviceGroupFilter, form.companyServices, sortBy])
+  }, [activeCatalog, serviceSearch, serviceGroupFilter, form.companyServices, sortBy])
 
   const selectedCompanyServices = useMemo(
     () =>
@@ -69,7 +70,8 @@ export function CompanyServices({ form, setForm, catalog, groups }: CompanyServi
     return totals
   }, [selectedCompanyServices])
 
-  const allCatalogAdded = form.companyServices.length === catalog.length
+  const activeSelectedCount = form.companyServices.filter((service) => activeCatalog.some((item) => item.id === service.serviceId)).length
+  const allCatalogAdded = activeSelectedCount === activeCatalog.length
 
   const addCompanyService = (serviceId: number) => {
     const item = catalog.find((c) => c.id === serviceId)
@@ -165,7 +167,7 @@ export function CompanyServices({ form, setForm, catalog, groups }: CompanyServi
           </div>
           <div className="flex items-center gap-2">
             <span className="text-xs text-slate-500">
-              <span className="font-bold text-slate-800">{form.companyServices.length}</span> / {catalog.length} test
+              <span className="font-bold text-slate-800">{activeSelectedCount}</span> / {activeCatalog.length} aktif test
             </span>
             {form.companyServices.length > 0 && (
               <button

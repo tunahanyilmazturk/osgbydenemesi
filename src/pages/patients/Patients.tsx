@@ -1,13 +1,14 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FileText, Plus, Search, Trash2 } from 'lucide-react'
-import { usePatients } from '../../context/PatientsContext'
-import { useProtocols } from '../../context/ProtocolsContext'
-import { useConfirm } from '../../context/ConfirmContext'
-import { PageHeader } from '../../components/PageHeader'
-import { Select } from '../../components/ui/Select'
-import { StatusBadge } from '../../components/ui/StatusBadge'
-import { Pagination } from '../../components/ui/Pagination'
+import { usePatients } from '@/state/PatientsContext'
+import { useProtocols } from '@/state/ProtocolsContext'
+import { useConfirm } from '@/state/ConfirmContext'
+import { PageHeader } from '@/shared/components/PageHeader'
+import { Select } from '@/shared/components/ui/Select'
+import { StatusBadge } from '@/shared/components/ui/StatusBadge'
+import { Pagination } from '@/shared/components/ui/Pagination'
+import { PatientAvatar } from '@/shared/components/ui/PatientAvatar'
 
 type PatientTab = 'patients' | 'protocols'
 
@@ -28,6 +29,17 @@ export function Patients() {
   const [protocolPage, setProtocolPage] = useState(1)
   const [protocolPageSize, setProtocolPageSize] = useState(10)
 
+  const currentProtocolByPatient = useMemo(() => {
+    const latest = new Map<number, typeof protocols[number]>()
+    protocols.forEach((protocol) => {
+      const current = latest.get(protocol.patientId)
+      if (!current || new Date(protocol.protocolDate).getTime() > new Date(current.protocolDate).getTime()) {
+        latest.set(protocol.patientId, protocol)
+      }
+    })
+    return latest
+  }, [protocols])
+
   const filteredPatients = useMemo(() => {
     return patients.filter((p) => {
       const term = search.trim().toLowerCase()
@@ -39,12 +51,12 @@ export function Patients() {
         p.email.toLowerCase().includes(term) ||
         p.company.toLowerCase().includes(term)
 
-      const matchesStatus =
-        statusFilter === 'Tümü' || p.status === statusFilter
+      const currentStatus = currentProtocolByPatient.get(p.id)?.status ?? p.status
+      const matchesStatus = statusFilter === 'Tümü' || currentStatus === statusFilter
 
       return matchesSearch && matchesStatus
     })
-  }, [patients, search, statusFilter])
+  }, [patients, search, statusFilter, currentProtocolByPatient])
 
   const totalPages = useMemo(() => Math.max(1, Math.ceil(filteredPatients.length / pageSize)), [filteredPatients, pageSize])
 
@@ -109,7 +121,7 @@ export function Patients() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="viewport-page">
       <PageHeader
         title="Hasta Kayıt Kabul"
         subtitle={
@@ -129,7 +141,7 @@ export function Patients() {
       />
 
       {/* Tabs */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-1.5 flex gap-1 w-fit">
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-1.5 flex gap-1 w-fit shrink-0">
         <button
           onClick={() => setActiveTab('patients')}
           className={`px-4 py-2 text-xs font-medium rounded-xl transition-colors ${
@@ -153,9 +165,9 @@ export function Patients() {
       </div>
 
       {activeTab === 'patients' ? (
-        <>
+        <div className="contents">
           {/* Filters */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-3 shrink-0">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
@@ -165,7 +177,7 @@ export function Patients() {
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1) }}
               onKeyDown={handleSearchKeyDown}
-              className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all"
+            className="w-full pl-12 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all"
             />
           </div>
           <div className="w-full md:w-48">
@@ -185,9 +197,9 @@ export function Patients() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex-1 min-h-0 flex flex-col">
+        <div className="surface-scroll">
+          <table className="w-full text-left text-sm sticky-table-header">
             <thead className="bg-slate-50 text-slate-500">
               <tr>
                 <th className="px-6 py-4 font-medium">Hasta</th>
@@ -214,14 +226,19 @@ export function Patients() {
                     className="hover:bg-slate-50 transition-colors cursor-pointer"
                   >
                     <td className="px-6 py-4">
-                      <div className="font-medium text-slate-800">{patient.name}</div>
-                      <div className="text-xs text-slate-500">{patient.email}</div>
+                      <div className="flex items-center gap-3">
+                        <PatientAvatar gender={patient.gender} name={patient.name} photoSrc={patient.photo} size="sm" />
+                        <div className="min-w-0">
+                          <div className="font-medium text-slate-800 truncate">{patient.name}</div>
+                          <div className="text-xs text-slate-500 truncate">{patient.email}</div>
+                        </div>
+                      </div>
                     </td>
                     <td className="px-6 py-4 text-slate-600 font-mono">{patient.tc}</td>
                     <td className="px-6 py-4 text-slate-600">{patient.company}</td>
                     <td className="px-6 py-4 text-slate-600">{patient.type}</td>
                     <td className="px-6 py-4">
-                      <StatusBadge status={patient.status} />
+                      <StatusBadge status={currentProtocolByPatient.get(patient.id)?.status ?? patient.status} />
                     </td>
                     <td className="px-6 py-4 text-slate-500">{patient.time}</td>
                     <td className="px-6 py-4 text-right">
@@ -275,11 +292,11 @@ export function Patients() {
           <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
         </div>
       </div>
-        </>
+        </div>
       ) : (
-        <>
+        <div className="contents">
           {/* Protocol filters */}
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-3 shrink-0">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1 relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
@@ -288,7 +305,7 @@ export function Patients() {
                   placeholder="Protokol no, hasta adı veya firma ara..."
                   value={protocolSearch}
                   onChange={(e) => { setProtocolSearch(e.target.value); setProtocolPage(1) }}
-                  className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all"
+                  className="w-full pl-12 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all"
                 />
               </div>
               <div className="w-full md:w-48">
@@ -308,9 +325,9 @@ export function Patients() {
           </div>
 
           {/* Protocols table */}
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="table-fixed w-full text-left text-xs">
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex-1 min-h-0 flex flex-col">
+            <div className="surface-scroll">
+              <table className="table-fixed w-full text-left text-xs sticky-table-header">
                 <thead className="bg-slate-50 text-slate-500">
                   <tr>
                     <th className="px-3 py-2 font-medium w-28">Protokol No</th>
@@ -392,7 +409,7 @@ export function Patients() {
               <Pagination page={protocolPage} totalPages={totalProtocolPages} onPageChange={setProtocolPage} />
             </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   )

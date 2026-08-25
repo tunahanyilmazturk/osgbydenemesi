@@ -1,6 +1,6 @@
-﻿import { FileText, History } from 'lucide-react'
-import { EmptyState } from '../../../components/ui/EmptyState'
-import { Pagination } from '../../../components/ui/Pagination'
+import { FileText, History } from 'lucide-react'
+import { EmptyState } from '@/shared/components/ui/EmptyState'
+import { Pagination } from '@/shared/components/ui/Pagination'
 
 interface MovementRow {
   id: number

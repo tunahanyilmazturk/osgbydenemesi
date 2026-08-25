@@ -1,10 +1,9 @@
-﻿import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Calendar, ChevronLeft, ChevronRight, Search, Send } from 'lucide-react'
-import type { ExternalLab, ExternalLabSendRecord } from '../../types'
-import { defaultExternalLabs } from './mocks/externalLabsDefaults'
+import type { ExternalLabSendRecord } from '@/shared/types'
+import { useExternalLabsStorage } from '@/pages/external-labs/hooks/useExternalLabsStorage'
 
-const EXTERNAL_LABS_KEY = 'cetka-external-labs'
 const SENDS_KEY = 'cetka-external-lab-sends'
 
 function formatDateInput(d: Date): string {
@@ -25,19 +24,6 @@ function formatDateTime(iso?: string): string {
     hour: '2-digit',
     minute: '2-digit',
   })
-}
-
-function loadLabs(): ExternalLab[] {
-  try {
-    const raw = localStorage.getItem(EXTERNAL_LABS_KEY)
-    if (raw) {
-      const parsed = JSON.parse(raw) as ExternalLab[]
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed
-    }
-  } catch {
-    // ignore
-  }
-  return defaultExternalLabs
 }
 
 function loadSends(): ExternalLabSendRecord[] {
@@ -69,7 +55,7 @@ export function ExternalLabSend() {
   const [labFilter, setLabFilter] = useState('Tümü')
 
   const [sends] = useState<ExternalLabSendRecord[]>(loadSends)
-  const labs = useMemo(() => loadLabs(), [])
+  const labs = useExternalLabsStorage()
 
   useEffect(() => {
     saveSends(sends)
@@ -110,7 +96,7 @@ export function ExternalLabSend() {
   }
 
   return (
-    <div className="space-y-4 h-full flex flex-col">
+    <div className="viewport-page">
       {/* Üst başlık ve yeni gönderim butonu */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>

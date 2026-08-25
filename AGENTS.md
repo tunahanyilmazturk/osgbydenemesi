@@ -23,17 +23,19 @@ Lint genelde uyarı verir, hata sayısı 0 olmalı.
 ### Sayfa Yapısı (pages-based)
 - Her modül `src/pages/[module]/` altında
 - Modüle özel alt bileşenler `src/pages/[module]/components/` altında
-- Paylaşılan UI bileşenleri `src/components/ui/` altında
+- Birden fazla sayfada kullanılan iş özellikleri `src/features/` altında
+- Paylaşılan UI bileşenleri `src/shared/components/ui/` altında
+- Uygulama içi importlarda `@/` alias'ı kullanılır
 
 ### Context Pattern
-- Tüm state `src/context/` altındaki Context provider'larda
+- Tüm state `src/state/` altındaki Context provider'larda
 - Her context `localStorage`'a otomatik kaydeder (`useEffect` ile)
 - Veri çekmek için custom hook: `useProtocols()`, `usePatients()`, `useCompanies()`, vb.
 
 ### Routing
-- Route'lar `src/App.tsx`'te
-- Menü öğeleri `src/components/Layout.tsx`'te `staticMenuItems` array'inde
-- Sayfa başlıkları `pathToTitle` map'inde
+- Route'lar `src/app/router/AppRouter.tsx` içinde ve lazy yüklenir
+- Menü öğeleri ve sayfa başlıkları `src/app/config/navigation.tsx` içinde tek kaynaktan yönetilir
+- Provider sırası `src/app/AppProviders.tsx` içindedir
 
 ### Marka Ayrımı
 - **Marka (yazılım):** HanTech — sidebar üst, login, dashboard hero'da
@@ -44,7 +46,7 @@ Lint genelde uyarı verir, hata sayısı 0 olmalı.
 
 ### Tamamlanan Özellikler
 1. ✅ Pages-based refactoring (tüm modüller taşındı)
-2. ✅ Lab.tsx modularization (labUtils.ts, BarcodeModal.tsx çıkarıldı)
+2. ✅ Lab.tsx modularization (labUtils.ts, BarcodeModal, SmsPreviewModal, DateRangeFilter, PatientHeader, ProtocolCard, ServiceStatusSummary, LabActionsToolbar, PrintResultsDropdown, ServiceContextMenu, LabServiceContextMenu, NoteModal, RejectionModal, AddServiceModal, PatientEditModal, LabFilterPanel, ProtocolListPanel, ResultsTable, useLabPrintHandlers, useLabBarcodeHandlers, useLabNoteHandlers, useLabPdfHandlers, useLabServiceHandlers, useLabSpecialModalHandlers, useLabSelectionHandlers, useLabContextMenu hook'ları çıkarıldı — ~658 satır)
 3. ✅ "Ana Sayfa" yeniden adlandırma (eski "Göstergeler")
 4. ✅ Dashboard hero header (gradient + kompakt istatistikler + grafikler)
 5. ✅ Marka ayrımı (HanTech vs kurum)
@@ -60,35 +62,36 @@ Lint genelde uyarı verir, hata sayısı 0 olmalı.
 
 ### Klasör Yapısı
 ```
-src/pages/
-├── dashboard/Dashboard.tsx
-├── patients/Patients.tsx
-├── lab/Lab.tsx + components/ (BarcodeModal, SmsPreviewModal)
-├── accounting/ (Accounting, CashMovements, Debtors, Vezne)
-├── companies/ (Companies, NewCompany + components/)
-├── settings/ (Settings, SmsSettings)
-├── definitions/ (Doctors, Services, Packages, vb.)
-└── ...
+src/
+├── app/       # Router, layout, provider zinciri, navigasyon
+├── features/  # Muayene ve vezne gibi sayfalar arası iş yetenekleri
+├── pages/     # Route ekranları; components/hooks/lib/data alt klasörleri
+├── shared/    # Genel UI, lib ve alan bazlı ortak tipler
+├── state/     # Context provider'ları ve fixtures
+└── main.tsx   # İnce giriş noktası
 ```
+
+Detaylı bağımlılık ve yerleştirme kuralları: `docs/ARCHITECTURE.md`.
 
 ## Devam Edilebilecek Konular
 
-- [ ] Web sonuç sayfası (`/sonuc/:protocolNo`) — SMS linkinden açılacak PDF görüntüleme
-- [ ] SMS logu için filtreleme/arama
+- [x] Web sonuç sayfası (`/sonuc/:protocolNo`) — onaylı sonuç ve PDF görüntüleme (yerel veri modu)
+- [x] SMS logu için filtreleme/arama
 - [ ] Gerçek SMS API test (şu an log modunda)
 - [ ] Rapor çıktılarında kurum logosu entegrasyonu
 - [ ] Kullanıcı yönetimi sayfası tam implementasyon
-- [ ] Backup/restore (localStorage verilerini dışa/içe aktarma)
+- [x] Backup/restore (localStorage verilerini doğrulanmış JSON olarak dışa/içe aktarma)
 
 ## Önemli Dosyalar
 
 | Dosya | Açıklama |
 |---|---|
-| `src/App.tsx` | Tüm route'lar |
-| `src/components/Layout.tsx` | Sidebar menü + topbar |
-| `src/components/Login.tsx` | Giriş sayfası (HanTech markası) |
-| `src/context/AuthContext.tsx` | Kullanıcı/rol/menü yetki |
-| `src/utils/sms.ts` | SMS gönderim + şablon + log |
+| `src/app/router/AppRouter.tsx` | Tüm route'lar ve code splitting |
+| `src/app/config/navigation.tsx` | Menü ve sayfa başlıkları |
+| `src/app/layout/AppLayout.tsx` | Sidebar + topbar |
+| `src/pages/auth/Login.tsx` | Giriş sayfası (HanTech markası) |
+| `src/state/AuthContext.tsx` | Kullanıcı/rol/menü yetki |
+| `src/shared/lib/sms.ts` | SMS gönderim + şablon + log |
 | `src/pages/settings/SmsSettings.tsx` | SMS yönetim sayfası |
 | `src/pages/lab/Lab.tsx` | Sonuç işlemleri (büyük dosya ~2000 satır) |
 
@@ -102,7 +105,7 @@ src/pages/
 
 ## Dikkat Edilecekler
 
-- `Lab.tsx` çok büyük (~2000 satır) — dikkatli düzenle
+- `Lab.tsx` çok büyük (~658 satır) — dikkatli düzenle
 - `localStorage` anahtarları `cetka-` prefix'li
 - TypeScript `strict` mode — kullanılmayan değişkenler hata verir
 - Oxlint `no-unused-vars` kuralı aktif

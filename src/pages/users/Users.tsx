@@ -1,19 +1,18 @@
-﻿import { useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import {
   Save, Trash2, UserPlus, X, Shield, ShieldPlus, Search, Eye, EyeOff,
-  Power, PowerOff, Users as UsersIcon, UserCheck, UserX, Stethoscope,
+  Power, PowerOff, Users as UsersIcon, UserCheck, UserX,
 } from 'lucide-react'
-import { PageHeader } from '../../components/PageHeader'
+import { PageHeader } from '@/shared/components/PageHeader'
 import {
   useAuth,
   type AppUser,
   type CustomRole,
-  type MenuKey,
-  ALL_MENUS,
-  MENU_LABELS,
-} from '../../context/AuthContext'
-import { useToast } from '../../context/ToastContext'
-import { useConfirm } from '../../context/ConfirmContext'
+  type PermissionKey,
+} from '@/state/AuthContext'
+import { PermissionMatrix } from '@/pages/users/components/PermissionMatrix'
+import { useToast } from '@/state/ToastContext'
+import { useConfirm } from '@/state/ConfirmContext'
 
 const ROLE_COLOR_CLASSES: Record<string, string> = {
   '#8b5cf6': 'bg-purple-100 text-purple-700 border-purple-200',
@@ -52,15 +51,11 @@ interface EditRoleState {
   id: string | null
   name: string
   color: string
-  allowedMenus: MenuKey[]
-  canApproveAudiometry: boolean
-  canApproveEyeExamination: boolean
-  canManageUsers: boolean
+  permissions: PermissionKey[]
 }
 
 const EMPTY_EDIT_ROLE: EditRoleState = {
-  id: null, name: '', color: '#2563eb', allowedMenus: [],
-  canApproveAudiometry: false, canApproveEyeExamination: false, canManageUsers: false,
+  id: null, name: '', color: '#2563eb', permissions: [],
 }
 
 function formatDate(iso?: string): string {
@@ -79,7 +74,7 @@ export function Users() {
   const {
     users, roles, currentUser,
     addUser, updateUser, deleteUser,
-    addRole, updateRole, deleteRole, getRole,
+    addRole, updateRole, deleteRole, getRole, canManageUsers,
   } = useAuth()
   const { showToast } = useToast()
   const confirmDialog = useConfirm()
@@ -101,7 +96,7 @@ export function Users() {
   // --- Rol ekleme ---
   const [showAddRole, setShowAddRole] = useState(false)
   const [newRole, setNewRole] = useState<Omit<CustomRole, 'id' | 'createdAt' | 'isSystem'>>({
-    name: '', color: '#2563eb', allowedMenus: [],
+    name: '', color: '#2563eb', permissions: [], allowedMenus: [],
     canApproveAudiometry: false, canApproveEyeExamination: false, canManageUsers: false,
   })
   const [addRoleError, setAddRoleError] = useState('')
@@ -222,13 +217,17 @@ export function Users() {
       setAddRoleError('Rol adı boş olamaz.')
       return
     }
+    if (newRole.permissions.length === 0) {
+      setAddRoleError('Rol için en az bir sayfa veya işlem yetkisi seçin.')
+      return
+    }
     const result = addRole(newRole)
     if (!result.ok) {
       setAddRoleError(result.error || 'Rol eklenemedi.')
       return
     }
     setNewRole({
-      name: '', color: '#2563eb', allowedMenus: [],
+      name: '', color: '#2563eb', permissions: [], allowedMenus: [],
       canApproveAudiometry: false, canApproveEyeExamination: false, canManageUsers: false,
     })
     setShowAddRole(false)
@@ -240,10 +239,7 @@ export function Users() {
     updateRole(editRole.id, {
       name: editRole.name,
       color: editRole.color,
-      allowedMenus: editRole.allowedMenus,
-      canApproveAudiometry: editRole.canApproveAudiometry,
-      canApproveEyeExamination: editRole.canApproveEyeExamination,
-      canManageUsers: editRole.canManageUsers,
+      permissions: editRole.permissions,
     })
     setEditRole(EMPTY_EDIT_ROLE)
     showToast('success', 'Rol güncellendi.')
@@ -266,80 +262,14 @@ export function Users() {
     }
   }
 
-  const toggleMenuInList = (menu: MenuKey, list: MenuKey[], setter: (menus: MenuKey[]) => void) => {
-    const set = new Set(list)
-    if (set.has(menu)) set.delete(menu)
-    else set.add(menu)
-    setter(Array.from(set))
-  }
-
   const newUserRole = roles.find((r) => r.id === newUser.roleId)
 
-  const renderMenuCheckboxes = (
-    menus: MenuKey[],
-    onToggle: (m: MenuKey) => void,
-  ) => (
-    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-2 bg-slate-50 border border-slate-200 rounded-lg">
-      {ALL_MENUS.map((m) => (
-        <label key={m} className="flex items-center gap-1.5 text-[11px] text-slate-700">
-          <input
-            type="checkbox"
-            checked={menus.includes(m)}
-            onChange={() => onToggle(m)}
-            className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-          />
-          {MENU_LABELS[m]}
-        </label>
-      ))}
-    </div>
-  )
-
-  const renderPermissions = (
-    canAudiometry: boolean,
-    canEye: boolean,
-    canManage: boolean,
-    onChange: (field: 'canApproveAudiometry' | 'canApproveEyeExamination' | 'canManageUsers', val: boolean) => void,
-  ) => (
-    <div className="space-y-2">
-      <label className="flex items-center gap-2 text-xs text-slate-700">
-        <input
-          type="checkbox"
-          checked={canAudiometry}
-          onChange={(e) => onChange('canApproveAudiometry', e.target.checked)}
-          className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-        />
-        <Stethoscope className="w-3.5 h-3.5 text-blue-500" />
-        İşitme Testi (Odyometri) Onaylayabilir
-      </label>
-      <label className="flex items-center gap-2 text-xs text-slate-700">
-        <input
-          type="checkbox"
-          checked={canEye}
-          onChange={(e) => onChange('canApproveEyeExamination', e.target.checked)}
-          className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-        />
-        <Eye className="w-3.5 h-3.5 text-blue-500" />
-        Göz Muayenesi (Oftalmoloji) Onaylayabilir
-      </label>
-      <label className="flex items-center gap-2 text-xs text-slate-700">
-        <input
-          type="checkbox"
-          checked={canManage}
-          onChange={(e) => onChange('canManageUsers', e.target.checked)}
-          className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-        />
-        <Shield className="w-3.5 h-3.5 text-purple-500" />
-        Kullanıcı Yönetimi Yapabilir
-      </label>
-    </div>
-  )
-
   return (
-    <div className="space-y-4 h-full flex flex-col min-h-0">
+    <div className="viewport-page">
       <PageHeader
         title="Kullanıcı Yönetimi"
         subtitle="Sistem kullanıcılarını, rollerini ve yetkilerini yönetin."
-        action={
+        action={canManageUsers ? (
           tab === 'users' ? (
             <button
               onClick={() => setShowAddUser((v) => !v)}
@@ -357,7 +287,7 @@ export function Users() {
               Yeni Rol
             </button>
           )
-        }
+        ) : undefined}
       />
 
       {/* İstatistik kartları */}
@@ -681,7 +611,9 @@ export function Users() {
                         {formatDate(u.lastLoginAt)}
                       </td>
                       <td className="px-4 py-2.5 text-right space-x-2">
-                        {editUser.id === u.id ? (
+                        {!canManageUsers ? (
+                          <span className="text-[10px] text-slate-400">Salt okunur</span>
+                        ) : editUser.id === u.id ? (
                           <>
                             <div className="relative inline-block">
                               <input
@@ -777,28 +709,7 @@ export function Users() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Görebileceği Menüler</label>
-                {renderMenuCheckboxes(newRole.allowedMenus, (m) => {
-                  setNewRole((p) => {
-                    const set = new Set(p.allowedMenus)
-                    if (set.has(m)) set.delete(m)
-                    else set.add(m)
-                    return { ...p, allowedMenus: Array.from(set) }
-                  })
-                })}
-                <p className="text-[10px] text-slate-500 mt-1">Hiçbiri seçilmezse tüm menüler görünür.</p>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Yetkiler</label>
-                {renderPermissions(
-                  newRole.canApproveAudiometry,
-                  newRole.canApproveEyeExamination,
-                  newRole.canManageUsers,
-                  (field, val) => setNewRole((p) => ({ ...p, [field]: val })),
-                )}
-              </div>
+              <PermissionMatrix value={newRole.permissions} onChange={(permissions) => setNewRole((previous) => ({ ...previous, permissions }))} />
 
               {addRoleError && <p className="text-xs text-red-600">{addRoleError}</p>}
               <div className="flex gap-2">
@@ -824,7 +735,7 @@ export function Users() {
               const isEditing = editRole.id === r.id
               const userCount = users.filter((u) => u.roleId === r.id).length
               return (
-                <div key={r.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-3">
+                <div key={r.id} className={`bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-3 ${isEditing ? 'md:col-span-2' : ''}`}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="w-4 h-4 rounded-full" style={{ backgroundColor: r.color }} />
@@ -846,14 +757,11 @@ export function Users() {
                           <button onClick={handleSaveEditRole} className="text-blue-600 hover:underline text-xs">Kaydet</button>
                           <button onClick={() => setEditRole(EMPTY_EDIT_ROLE)} className="text-slate-500 hover:underline text-xs">İptal</button>
                         </>
-                      ) : (
+                      ) : canManageUsers ? (
                         <>
                           <button
                             onClick={() => setEditRole({
-                              id: r.id, name: r.name, color: r.color, allowedMenus: r.allowedMenus,
-                              canApproveAudiometry: r.canApproveAudiometry,
-                              canApproveEyeExamination: r.canApproveEyeExamination,
-                              canManageUsers: r.canManageUsers,
+                              id: r.id, name: r.name, color: r.color, permissions: r.permissions,
                             })}
                             className="text-blue-600 hover:underline text-xs"
                           >
@@ -869,6 +777,8 @@ export function Users() {
                             </button>
                           )}
                         </>
+                      ) : (
+                        <span className="text-[10px] text-slate-400">Salt okunur</span>
                       )}
                     </div>
                   </div>
@@ -887,55 +797,15 @@ export function Users() {
                     </div>
                   )}
 
-                  {/* Menüler */}
-                  <div>
-                    <p className="text-[10px] font-medium text-slate-500 mb-1">MENÜLER</p>
-                    {isEditing ? (
-                      renderMenuCheckboxes(editRole.allowedMenus, (m) => toggleMenuInList(m, editRole.allowedMenus, (menus) => setEditRole((p) => ({ ...p, allowedMenus: menus }))))
-                    ) : (
-                      <div className="flex flex-wrap gap-1">
-                        {r.allowedMenus.length === 0 ? (
-                          <span className="text-[10px] text-slate-400">Tüm menüler</span>
-                        ) : (
-                          r.allowedMenus.map((m) => (
-                            <span key={m} className="text-[9px] px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded">
-                              {MENU_LABELS[m]}
-                            </span>
-                          ))
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Yetkiler */}
-                  <div>
-                    <p className="text-[10px] font-medium text-slate-500 mb-1">YETKİLER</p>
-                    <div className="space-y-1">
-                      {isEditing ? (
-                        renderPermissions(
-                          editRole.canApproveAudiometry,
-                          editRole.canApproveEyeExamination,
-                          editRole.canManageUsers,
-                          (field, val) => setEditRole((p) => ({ ...p, [field]: val })),
-                        )
-                      ) : (
-                        <>
-                          <div className="flex items-center gap-1.5 text-[11px]">
-                            <span className={`w-2 h-2 rounded-full ${r.canApproveAudiometry ? 'bg-green-50' : 'bg-slate-300'}`} />
-                            <span className={r.canApproveAudiometry ? 'text-slate-700' : 'text-slate-400'}>İşitme Testi Onayı</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-[11px]">
-                            <span className={`w-2 h-2 rounded-full ${r.canApproveEyeExamination ? 'bg-green-50' : 'bg-slate-300'}`} />
-                            <span className={r.canApproveEyeExamination ? 'text-slate-700' : 'text-slate-400'}>Göz Muayenesi Onayı</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-[11px]">
-                            <span className={`w-2 h-2 rounded-full ${r.canManageUsers ? 'bg-green-50' : 'bg-slate-300'}`} />
-                            <span className={r.canManageUsers ? 'text-slate-700' : 'text-slate-400'}>Kullanıcı Yönetimi</span>
-                          </div>
-                        </>
-                      )}
+                  {isEditing ? (
+                    <PermissionMatrix value={editRole.permissions} onChange={(permissions) => setEditRole((previous) => ({ ...previous, permissions }))} readOnly={r.id === 'role-admin'} />
+                  ) : (
+                    <div className="grid grid-cols-3 gap-2 rounded-xl border border-slate-100 bg-slate-50 p-2 text-center">
+                      <div><p className="text-sm font-bold text-slate-800">{r.permissions.length}</p><p className="text-[9px] text-slate-500">Yetki</p></div>
+                      <div><p className="text-sm font-bold text-slate-800">{r.allowedMenus.length}</p><p className="text-[9px] text-slate-500">Modül</p></div>
+                      <div><p className="text-sm font-bold text-slate-800">{r.permissions.filter((permission) => permission.endsWith('.view')).length}</p><p className="text-[9px] text-slate-500">Sayfa</p></div>
                     </div>
-                  </div>
+                  )}
                 </div>
               )
             })}
@@ -944,12 +814,8 @@ export function Users() {
       )}
 
       <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-slate-700 space-y-1">
-        <p><strong>Bilgi:</strong> Roller menüler ve yetkiler gruplandırır. Kullanıcılara rol atayarak yetki verirsiniz.</p>
-        <p>• <strong>Menüler</strong>: Kullanıcının sidebar'da görebileceği sayfaları belirler.</p>
-        <p>• <strong>İşitme Testi Onayı</strong>: Odyometri sonuçlarını onaylama ve PDF'de kaşe gösterme yetkisi.</p>
-        <p>• <strong>Göz Muayenesi Onayı</strong>: Göz muayenesi sonuçlarını onaylama ve PDF'de kaşe gösterme yetkisi.</p>
-        <p>• <strong>Kullanıcı Yönetimi</strong>: Bu sayfaya erişim ve kullanıcı/rol yönetme yetkisi.</p>
-        <p>• <strong>Aktif/Pasif</strong>: Pasif kullanıcılar giriş yapamaz, ancak verisi korunur.</p>
+        <p><strong>Bilgi:</strong> Her ekran için görüntüleme ve yönetme haklarını ayrı verebilirsiniz. Yönetme seçildiğinde gerekli görüntüleme hakkı otomatik eklenir.</p>
+        <p>• Yetkisi olmayan sayfalar menüde görünmez ve doğrudan adresle de açılamaz. Pasif kullanıcılar giriş yapamaz, kayıtları korunur.</p>
       </div>
     </div>
   )

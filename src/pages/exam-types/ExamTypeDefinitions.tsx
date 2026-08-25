@@ -1,9 +1,9 @@
-﻿import { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Plus, Save, Search, X } from 'lucide-react'
-import { useExamTypes } from '../../context/ExamTypesContext'
-import { PageHeader } from '../../components/PageHeader'
-import { useToast } from '../../context/ToastContext'
-import { useConfirm } from '../../context/ConfirmContext'
+import { useExamTypes } from '@/state/ExamTypesContext'
+import { PageHeader } from '@/shared/components/PageHeader'
+import { useToast } from '@/state/ToastContext'
+import { useConfirm } from '@/state/ConfirmContext'
 
 export function ExamTypeDefinitions() {
   const { examTypes, addExamType, updateExamType, removeExamType, toggleMobileHealth } = useExamTypes()
@@ -88,7 +88,7 @@ export function ExamTypeDefinitions() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="viewport-page">
       <PageHeader
         title="Muayene Türü Tanımları"
         subtitle="Protokol oluştururken kullanılacak muayene türlerini tanımlayın."
@@ -142,8 +142,8 @@ export function ExamTypeDefinitions() {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <table className="w-full text-left text-sm">
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex-1 min-h-0 surface-scroll">
+        <table className="w-full text-left text-sm sticky-table-header">
           <thead className="bg-slate-50 text-slate-600">
             <tr>
               <th className="px-4 py-3 font-medium">#</th>

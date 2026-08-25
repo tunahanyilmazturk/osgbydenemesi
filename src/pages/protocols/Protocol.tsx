@@ -1,11 +1,12 @@
-﻿import { useMemo } from 'react'
-import { ArrowLeft, Edit2, Mail, Phone, Plus, Trash2, User } from 'lucide-react'
+import { useMemo } from 'react'
+import { ArrowLeft, Edit2, Mail, Phone, Plus, Trash2 } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { usePatients } from '../../context/PatientsContext'
-import { useProtocols } from '../../context/ProtocolsContext'
-import { useConfirm } from '../../context/ConfirmContext'
-import { PageHeader } from '../../components/PageHeader'
-import { StatusBadge } from '../../components/ui/StatusBadge'
+import { usePatients } from '@/state/PatientsContext'
+import { useProtocols } from '@/state/ProtocolsContext'
+import { useConfirm } from '@/state/ConfirmContext'
+import { PageHeader } from '@/shared/components/PageHeader'
+import { StatusBadge } from '@/shared/components/ui/StatusBadge'
+import { PatientAvatar } from '@/shared/components/ui/PatientAvatar'
 
 export function Protocol() {
   const { patientId } = useParams<{ patientId: string }>()
@@ -48,13 +49,8 @@ export function Protocol() {
     )
   }
 
-  const genderColor =
-    patient.gender === 'Kadın'
-      ? 'bg-pink-100 text-pink-600 border-pink-200'
-      : 'bg-blue-100 text-blue-600 border-blue-200'
-
   return (
-    <div className="space-y-4">
+    <div className="viewport-page">
       <PageHeader
         title="Protokol Kartı"
         subtitle={`${patient.name} için protokol listesi.`}
@@ -72,9 +68,7 @@ export function Protocol() {
       {/* Patient identity card */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
         <div className="flex flex-col md:flex-row items-start md:items-center gap-5">
-          <div className={`w-20 h-20 rounded-2xl border-2 flex items-center justify-center ${genderColor}`}>
-            <User className="w-10 h-10" />
-          </div>
+          <PatientAvatar gender={patient.gender} name={patient.name} photoSrc={patient.photo} size="xl" />
           <div className="flex-1 min-w-0">
             <h2 className="text-lg font-bold text-slate-800">{patient.name}</h2>
             <p className="text-sm text-slate-500">
@@ -119,15 +113,15 @@ export function Protocol() {
       </div>
 
       {/* Protocol list */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex-1 min-h-0 flex flex-col">
         <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
           <h3 className="font-bold text-slate-800">Protokol Listesi</h3>
           <span className="text-sm text-slate-500">
             Toplam <span className="font-semibold text-slate-800">{patientProtocols.length}</span> protokol
           </span>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+        <div className="surface-scroll">
+          <table className="w-full text-left text-sm sticky-table-header">
             <thead className="bg-slate-50 text-slate-500">
               <tr>
                 <th className="px-6 py-3 font-medium">Durum</th>

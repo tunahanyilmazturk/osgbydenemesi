@@ -1,4 +1,4 @@
-﻿import {
+import {
   Activity,
   AlertCircle,
   ArrowUpRight,
@@ -15,14 +15,14 @@
 } from 'lucide-react'
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { usePatients } from '../../context/PatientsContext'
-import { useProtocols } from '../../context/ProtocolsContext'
-import { useCompanies } from '../../context/CompaniesContext'
-import { useAuth } from '../../context/AuthContext'
-import { nowLocalDate } from '../../utils/date'
-import { StatusBadge } from '../../components/ui/StatusBadge'
-import { TrendChart, DonutChart } from '../../components/ui/Charts'
-import type { Protocol } from '../../types'
+import { usePatients } from '@/state/PatientsContext'
+import { useProtocols } from '@/state/ProtocolsContext'
+import { useCompanies } from '@/state/CompaniesContext'
+import { useAuth } from '@/state/AuthContext'
+import { nowLocalDate } from '@/shared/lib/date'
+import { StatusBadge } from '@/shared/components/ui/StatusBadge'
+import { TrendChart, DonutChart } from '@/shared/components/ui/Charts'
+import type { Protocol } from '@/shared/types'
 
 const INSTITUTION_KEY = 'cetka-institution'
 
@@ -238,7 +238,7 @@ export function Dashboard() {
     : '-'
 
   return (
-    <div className="space-y-6">
+    <div className="viewport-scroll space-y-4">
       {/* Hero Header — şık karşılama + kompakt istatistikler */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 shadow-xl">
         {/* Dekoratif arka plan elemanları */}

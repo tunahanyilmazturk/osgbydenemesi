@@ -1,7 +1,7 @@
-﻿import { useMemo } from 'react'
+import { useMemo } from 'react'
 import { AlertCircle, User } from 'lucide-react'
-import type { Company } from '../../../context/CompaniesContext'
-import { useServices } from '../../../context/ServicesContext'
+import type { Company } from '@/state/CompaniesContext'
+import { useServices } from '@/state/ServicesContext'
 
 interface CompanyNotesStepProps {
   form: Omit<Company, 'id'>

@@ -1,4 +1,4 @@
-﻿import { Banknote, CreditCard, FileText, Filter, RefreshCcw, Wallet } from 'lucide-react'
+import { Banknote, CreditCard, FileText, Filter, RefreshCcw, Wallet } from 'lucide-react'
 
 interface AccountingSummaryProps {
   totalsByType: Record<string, number>

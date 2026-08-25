@@ -1,15 +1,16 @@
-﻿import { useMemo, useState } from 'react'
-import { ArrowLeft, Barcode, Mail, Phone, Plus, Printer, Trash2, User } from 'lucide-react'
+import { useState } from 'react'
+import { ArrowLeft, Barcode, Mail, Phone, Plus, Printer, Trash2 } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { usePatients } from '../../context/PatientsContext'
-import { useProtocols } from '../../context/ProtocolsContext'
-import { useCompanies } from '../../context/CompaniesContext'
-import { useConfirm } from '../../context/ConfirmContext'
-import { ServiceModal } from '../../pages/protocols/components/ServiceModal'
-import { VezneTransactions } from '../../pages/vezne/components/VezneTransactions'
-import { PageHeader } from '../../components/PageHeader'
-import { StatusBadge } from '../../components/ui/StatusBadge'
-import type { ProtocolService } from '../../types'
+import { usePatients } from '@/state/PatientsContext'
+import { useProtocols } from '@/state/ProtocolsContext'
+import { useCompanies } from '@/state/CompaniesContext'
+import { useConfirm } from '@/state/ConfirmContext'
+import { ServiceModal } from '@/pages/protocols/components/ServiceModal'
+import { VezneTransactions } from '@/features/cashier/components/VezneTransactions'
+import { PageHeader } from '@/shared/components/PageHeader'
+import { PatientAvatar } from '@/shared/components/ui/PatientAvatar'
+import { StatusBadge } from '@/shared/components/ui/StatusBadge'
+import type { ProtocolService } from '@/shared/types'
 
 type SubTab = 'protokol' | 'vezne'
 
@@ -51,15 +52,8 @@ export function ProtocolDetail() {
     setEditPrice('')
   }
 
-  const patient = useMemo(
-    () => patients.find((p) => p.id === Number(patientId)),
-    [patients, patientId]
-  )
-
-  const protocol = useMemo(
-    () => protocols.find((p) => p.id === Number(protocolId)),
-    [protocols, protocolId]
-  )
+  const patient = patients.find((item) => item.id === Number(patientId))
+  const protocol = protocols.find((item) => item.id === Number(protocolId))
 
   const handleAddService = (
     service: Omit<ProtocolService, 'id' | 'protocolId' | 'barcode' | 'totalPrice'>
@@ -229,11 +223,6 @@ export function ProtocolDetail() {
     window.open(url, '_blank')
   }
 
-  const genderColor =
-    patient.gender === 'Kadın'
-      ? 'bg-pink-100 text-pink-600 border-pink-200'
-      : 'bg-blue-100 text-blue-600 border-blue-200'
-
   const menuItems = [
     { label: 'Kimlik Kartı', path: `/hasta-kayit/protokol/${patient.id}` },
     { label: 'Protokol Listesi', path: `/hasta-kayit/protokol/${patient.id}` },
@@ -245,7 +234,7 @@ export function ProtocolDetail() {
   ]
 
   return (
-    <div className="space-y-2">
+    <div className="viewport-scroll space-y-2">
       <PageHeader
         title="Protokol Detay"
         subtitle={`${patient.name} - Protokol No: ${protocol.protocolNo}`}
@@ -272,9 +261,7 @@ export function ProtocolDetail() {
       {/* Patient card */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
         <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
-          <div className={`w-12 h-12 rounded-xl border-2 flex items-center justify-center ${genderColor}`}>
-            <User className="w-6 h-6" />
-          </div>
+          <PatientAvatar gender={patient.gender} name={patient.name} photoSrc={patient.photo} size="md" />
           <div className="flex-1 min-w-0">
             <h2 className="text-base font-bold text-slate-800">{patient.name}</h2>
             <p className="text-xs text-slate-500">

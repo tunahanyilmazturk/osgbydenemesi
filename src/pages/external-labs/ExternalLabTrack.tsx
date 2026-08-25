@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Calendar,
@@ -18,13 +18,14 @@ import {
   UserRound,
   X,
 } from 'lucide-react'
-import { PageHeader } from '../../components/PageHeader'
-import { Modal } from '../../components/ui/Modal'
-import { EmptyState } from '../../components/ui/EmptyState'
-import { Pagination } from '../../components/ui/Pagination'
-import { usePatients } from '../../context/PatientsContext'
-import { useProtocols } from '../../context/ProtocolsContext'
-import type { ExternalLabSendRecord, ProtocolService } from '../../types'
+import { PageHeader } from '@/shared/components/PageHeader'
+import { Modal } from '@/shared/components/ui/Modal'
+import { EmptyState } from '@/shared/components/ui/EmptyState'
+import { Pagination } from '@/shared/components/ui/Pagination'
+import { usePatients } from '@/state/PatientsContext'
+import { useProtocols } from '@/state/ProtocolsContext'
+import type { ExternalLabSendRecord, ProtocolService } from '@/shared/types'
+import { formatDateLocal, nowLocalDate } from '@/shared/lib/date'
 
 const SENDS_KEY = 'cetka-external-lab-sends'
 const PAGE_SIZE = 12
@@ -108,9 +109,9 @@ export function ExternalLabTrack() {
   const [startDate, setStartDate] = useState(() => {
     const date = new Date(today)
     date.setDate(date.getDate() - 30)
-    return date.toISOString().slice(0, 10)
+    return formatDateLocal(date)
   })
-  const [endDate, setEndDate] = useState(() => today.toISOString().slice(0, 10))
+  const [endDate, setEndDate] = useState(nowLocalDate)
   const [statusFilter, setStatusFilter] = useState('Tümü')
   const [labFilter, setLabFilter] = useState('Tümü')
   const [companyFilter, setCompanyFilter] = useState('Tümü')
@@ -212,8 +213,8 @@ export function ExternalLabTrack() {
     const end = new Date(`${endDate}T00:00:00`)
     start.setDate(start.getDate() + days)
     end.setDate(end.getDate() + days)
-    setStartDate(start.toISOString().slice(0, 10))
-    setEndDate(end.toISOString().slice(0, 10))
+    setStartDate(formatDateLocal(start))
+    setEndDate(formatDateLocal(end))
     setPage(1)
   }
 
@@ -252,7 +253,7 @@ export function ExternalLabTrack() {
   }
 
   return (
-    <div className="space-y-4 h-full flex flex-col">
+    <div className="viewport-page">
       <PageHeader
         title="Dış Lab İzlem"
         subtitle="Dış laboratuvarlara gönderilen hizmetlerin durumunu ve sonuç sürecini takip edin."

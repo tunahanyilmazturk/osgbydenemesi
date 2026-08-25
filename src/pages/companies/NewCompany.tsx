@@ -1,14 +1,14 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { AlertCircle, ArrowLeft, Building2, Check, ChevronRight, Phone, Plus, Save, X } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useCompanies, type Company, type CompanyType, type DangerClass, type PaymentType } from '../../context/CompaniesContext'
-import { useServices } from '../../context/ServicesContext'
-import { useToast } from '../../context/ToastContext'
-import { PageHeader } from '../../components/PageHeader'
-import { CompanyServices } from './components/CompanyServices'
-import { CompanyGeneralStep } from './components/CompanyGeneralStep'
-import { CompanyContactStep } from './components/CompanyContactStep'
-import { CompanyNotesStep } from './components/CompanyNotesStep'
+import { useCompanies, type Company, type CompanyType, type DangerClass, type PaymentType } from '@/state/CompaniesContext'
+import { useServices } from '@/state/ServicesContext'
+import { useToast } from '@/state/ToastContext'
+import { PageHeader } from '@/shared/components/PageHeader'
+import { CompanyServices } from '@/pages/companies/components/CompanyServices'
+import { CompanyGeneralStep } from '@/pages/companies/components/CompanyGeneralStep'
+import { CompanyContactStep } from '@/pages/companies/components/CompanyContactStep'
+import { CompanyNotesStep } from '@/pages/companies/components/CompanyNotesStep'
 
 const companyTypes: CompanyType[] = ['Ana Firma', 'Alt İşveren', 'Müşteri', 'Tedarikçi']
 const dangerClasses: DangerClass[] = ['Az Tehlikeli', 'Tehlikeli', 'Çok Tehlikeli']
@@ -70,7 +70,11 @@ export function NewCompany() {
   }, 0)
 
   const update = (field: keyof Omit<Company, 'id'>, value: string | boolean) => {
-    setForm((prev) => ({ ...prev, [field]: value }))
+    const normalizedValue =
+      typeof value === 'string' && (field === 'taxNumber' || field === 'sgkNumber')
+        ? value.replace(/\D/g, '')
+        : value
+    setForm((prev) => ({ ...prev, [field]: normalizedValue }))
   }
 
   const goToStep = (target: number) => {
@@ -89,12 +93,29 @@ export function NewCompany() {
       setStep(1)
       return
     }
+    const normalizedName = form.name.trim().toLocaleLowerCase('tr-TR')
+    if (companies.some((company) => company.id !== existingCompany?.id && company.name.trim().toLocaleLowerCase('tr-TR') === normalizedName)) {
+      showToast('warning', 'Firma zaten kayıtlı', 'Aynı adla ikinci bir firma oluşturamazsınız.')
+      setStep(1)
+      return
+    }
+    if (form.taxNumber && form.taxNumber.length !== 10) {
+      showToast('warning', 'Geçersiz vergi numarası', 'Vergi numarası 10 rakamdan oluşmalıdır.')
+      setStep(1)
+      return
+    }
+    if (form.taxNumber && companies.some((company) => company.id !== existingCompany?.id && company.taxNumber === form.taxNumber)) {
+      showToast('warning', 'Vergi numarası kullanılıyor', 'Bu vergi numarası başka bir firmaya ait.')
+      setStep(1)
+      return
+    }
+    const normalizedForm = { ...form, name: form.name.trim(), email: form.email.trim().toLowerCase() }
     if (isEditing && existingCompany) {
-      updateCompany(existingCompany.id, form)
-      showToast('success', 'Firma güncellendi', `"${form.name}" firma bilgileri güncellendi.`)
+      updateCompany(existingCompany.id, normalizedForm)
+      showToast('success', 'Firma güncellendi', `"${normalizedForm.name}" firma bilgileri güncellendi.`)
     } else {
-      addCompany(form)
-      showToast('success', 'Firma oluşturuldu', `"${form.name}" başarıyla eklendi.`)
+      addCompany(normalizedForm)
+      showToast('success', 'Firma oluşturuldu', `"${normalizedForm.name}" başarıyla eklendi.`)
     }
     navigate('/ayarlar/firmalar')
   }

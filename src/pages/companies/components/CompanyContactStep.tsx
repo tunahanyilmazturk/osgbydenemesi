@@ -1,6 +1,6 @@
-﻿import { MessageSquare, Phone } from 'lucide-react'
-import type { Company, DangerClass, PaymentType } from '../../../context/CompaniesContext'
-import { Input } from '../../../components/ui/Input'
+import { MessageSquare, Phone } from 'lucide-react'
+import type { Company, DangerClass, PaymentType } from '@/state/CompaniesContext'
+import { Input } from '@/shared/components/ui/Input'
 
 interface CompanyContactStepProps {
   form: Omit<Company, 'id'>

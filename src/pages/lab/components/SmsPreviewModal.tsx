@@ -1,6 +1,6 @@
 import { CheckCircle2, MessageSquare, Send } from 'lucide-react'
 import { useState } from 'react'
-import { Modal } from '../../../components/ui/Modal'
+import { Modal } from '@/shared/components/ui/Modal'
 
 export interface SmsPreviewItem {
   patientName: string

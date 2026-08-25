@@ -1,10 +1,10 @@
-﻿import { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Building2, Edit2, Package, Plus, Search, Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { useServices } from '../../context/ServicesContext'
-import { useToast } from '../../context/ToastContext'
-import { useConfirm } from '../../context/ConfirmContext'
-import { PageHeader } from '../../components/PageHeader'
+import { useServices } from '@/state/ServicesContext'
+import { useToast } from '@/state/ToastContext'
+import { useConfirm } from '@/state/ConfirmContext'
+import { PageHeader } from '@/shared/components/PageHeader'
 
 export function PackageDefinitions() {
   const navigate = useNavigate()
@@ -50,7 +50,7 @@ export function PackageDefinitions() {
   const generalCount = packages.filter((p) => p.companies.length === 0).length
 
   return (
-    <div className="space-y-4">
+    <div className="viewport-scroll space-y-3">
       <PageHeader
         title="Paket Tanımları"
         subtitle="Hizmetleri gruplayarak paket oluşturun ve firma bazında atayın."
@@ -283,4 +283,3 @@ export function PackageDefinitions() {
     </div>
   )
 }
-

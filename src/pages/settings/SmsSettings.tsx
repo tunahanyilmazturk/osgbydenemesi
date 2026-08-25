@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
-import { CheckCircle2, MessageSquare, Save, Send, Trash2, XCircle } from 'lucide-react'
-import { PageHeader } from '../../components/PageHeader'
-import { useToast } from '../../context/ToastContext'
-import { sendTestSms, loadSmsLog, saveSmsLog, type SmsLogEntry } from '../../utils/sms'
+import { useMemo, useState } from 'react'
+import { CheckCircle2, MessageSquare, Save, Search, Send, Trash2, XCircle } from 'lucide-react'
+import { PageHeader } from '@/shared/components/PageHeader'
+import { useToast } from '@/state/ToastContext'
+import { sendTestSms, loadSmsLog, saveSmsLog, type SmsLogEntry } from '@/shared/lib/sms'
 
 interface SmsSettingsForm {
   smsTitle: string
@@ -63,12 +63,19 @@ export function SmsSettings() {
   const [form, setForm] = useState<SmsSettingsForm>(loadForm())
   const [testPhone, setTestPhone] = useState('')
   const [isSendingTest, setIsSendingTest] = useState(false)
-  const [smsLog, setSmsLog] = useState<SmsLogEntry[]>([])
+  const [smsLog, setSmsLog] = useState<SmsLogEntry[]>(loadSmsLog)
+  const [logSearch, setLogSearch] = useState('')
+  const [logStatus, setLogStatus] = useState<'all' | SmsLogEntry['status']>('all')
   const { showToast } = useToast()
 
-  useEffect(() => {
-    setSmsLog(loadSmsLog())
-  }, [])
+  const filteredLog = useMemo(() => {
+    const term = logSearch.trim().toLocaleLowerCase('tr-TR')
+    return smsLog.filter((entry) => {
+      if (logStatus !== 'all' && entry.status !== logStatus) return false
+      if (!term) return true
+      return [entry.patientName, entry.patientPhone, entry.protocolNo, entry.companyName, entry.message].some((value) => value.toLocaleLowerCase('tr-TR').includes(term))
+    })
+  }, [smsLog, logSearch, logStatus])
 
   const updateField = <K extends keyof SmsSettingsForm>(field: K, value: SmsSettingsForm[K]) => {
     setForm((prev) => ({ ...prev, [field]: value }))
@@ -130,7 +137,7 @@ export function SmsSettings() {
   const smsCount = charCount <= 160 ? 1 : charCount <= 320 ? 2 : 3
 
   return (
-    <div className="space-y-4 h-full flex flex-col min-h-0">
+    <div className="viewport-page">
       <PageHeader
         title="SMS Ayarları"
         subtitle="SMS sağlayıcı, mesaj şablonu ve gönderim logu yönetimi."
@@ -343,6 +350,13 @@ export function SmsSettings() {
             )}
           </div>
 
+          {smsLog.length > 0 && (
+            <div className="flex flex-col sm:flex-row gap-2">
+              <label className="relative flex-1"><span className="sr-only">SMS logunda ara</span><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" /><input value={logSearch} onChange={(event) => setLogSearch(event.target.value)} placeholder="Hasta, telefon, protokol veya firma ara..." className="w-full pl-8 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500" /></label>
+              <label><span className="sr-only">SMS durumuna göre filtrele</span><select value={logStatus} onChange={(event) => setLogStatus(event.target.value as 'all' | SmsLogEntry['status'])} className="w-full sm:w-40 px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"><option value="all">Tüm durumlar</option><option value="sent">Gönderildi</option><option value="failed">Başarısız</option><option value="pending">Bekliyor</option></select></label>
+            </div>
+          )}
+
           {smsLog.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <MessageSquare className="w-8 h-8 text-slate-300 mb-2" />
@@ -351,9 +365,11 @@ export function SmsSettings() {
                 Sonuçlar onaylandığında gönderilen SMS'ler burada listelenir.
               </p>
             </div>
+          ) : filteredLog.length === 0 ? (
+            <div className="py-8 text-center"><Search className="w-7 h-7 text-slate-300 mx-auto mb-2" /><p className="text-xs font-medium text-slate-600">Filtreyle eşleşen SMS kaydı yok.</p><button type="button" onClick={() => { setLogSearch(''); setLogStatus('all') }} className="mt-2 text-xs font-semibold text-blue-600 hover:text-blue-700">Filtreleri temizle</button></div>
           ) : (
             <div className="max-h-[300px] overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100">
-              {smsLog.map((entry) => (
+              {filteredLog.map((entry) => (
                 <div key={entry.id} className="p-3 flex items-start gap-3">
                   {/* Durum ikonu */}
                   <div className="shrink-0 mt-0.5">

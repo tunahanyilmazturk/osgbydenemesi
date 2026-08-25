@@ -1,17 +1,18 @@
-﻿import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { ArrowLeft, Calendar, Check, ChevronRight, Mail, Phone, Save, User, Wallet, X } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useCompanies } from '../../context/CompaniesContext'
-import { usePatients } from '../../context/PatientsContext'
-import { useProtocols } from '../../context/ProtocolsContext'
-import { useExamTypes } from '../../context/ExamTypesContext'
-import { PageHeader } from '../../components/PageHeader'
-import { ServiceSelector } from '../../pages/protocols/components/ServiceSelector'
-import { VezneStep, type LocalPayment } from '../../pages/protocols/components/VezneStep'
-import { ProtocolInfoStep } from '../../pages/protocols/components/ProtocolInfoStep'
-import { CompanySelect } from '../../components/ui/CompanySelect'
-import type { ProtocolService } from '../../types'
-import { nowLocalDate, nowLocalDateTime } from '../../utils/date'
+import { useCompanies } from '@/state/CompaniesContext'
+import { usePatients } from '@/state/PatientsContext'
+import { useProtocols } from '@/state/ProtocolsContext'
+import { useExamTypes } from '@/state/ExamTypesContext'
+import { PageHeader } from '@/shared/components/PageHeader'
+import { ServiceSelector } from '@/pages/protocols/components/ServiceSelector'
+import { VezneStep, type LocalPayment } from '@/pages/protocols/components/VezneStep'
+import { ProtocolInfoStep } from '@/pages/protocols/components/ProtocolInfoStep'
+import { CompanySelect } from '@/shared/components/ui/CompanySelect'
+import type { ProtocolService } from '@/shared/types'
+import { nowLocalDate, nowLocalDateTime } from '@/shared/lib/date'
+import { PatientAvatar } from '@/shared/components/ui/PatientAvatar'
 
 function calculateTotal(price: number, vatRate: number) {
   return Number((price * (1 + vatRate / 100)).toFixed(2))
@@ -48,24 +49,21 @@ export function NewProtocol() {
     [activeCompanies, form.company]
   )
 
-  const [showProtocolNote, setShowProtocolNote] = useState(false)
-
-  useEffect(() => {
-    if (!selectedCompany || !selectedCompany.protocolNote.trim()) {
-      setShowProtocolNote(false)
-      return
-    }
-    const today = nowLocalDate()
-    const dismissed = localStorage.getItem(`protocolNoteDismissed_${selectedCompany.id}_${today}`)
-    setShowProtocolNote(dismissed !== 'true')
-  }, [selectedCompany])
+  const protocolNoteKey = selectedCompany
+    ? `protocolNoteDismissed_${selectedCompany.id}_${nowLocalDate()}`
+    : null
+  const [dismissedProtocolNoteKey, setDismissedProtocolNoteKey] = useState<string | null>(null)
+  const showProtocolNote = Boolean(
+    selectedCompany?.protocolNote.trim()
+      && protocolNoteKey
+      && dismissedProtocolNoteKey !== protocolNoteKey
+      && localStorage.getItem(protocolNoteKey) !== 'true'
+  )
 
   const dismissProtocolNote = (dontShowToday: boolean) => {
-    setShowProtocolNote(false)
-    if (dontShowToday && selectedCompany) {
-      const today = nowLocalDate()
-      localStorage.setItem(`protocolNoteDismissed_${selectedCompany.id}_${today}`, 'true')
-    }
+    if (!protocolNoteKey) return
+    setDismissedProtocolNoteKey(protocolNoteKey)
+    if (dontShowToday) localStorage.setItem(protocolNoteKey, 'true')
   }
 
   const [selectedServices, setSelectedServices] = useState<Array<{
@@ -211,11 +209,6 @@ export function NewProtocol() {
     )
   }
 
-  const genderColor =
-    patient.gender === 'Kadın'
-      ? 'bg-pink-100 text-pink-600 border-pink-200'
-      : 'bg-blue-100 text-blue-600 border-blue-200'
-
   const stepItems = [
     { key: 1 as const, label: 'Protokol Bilgileri' },
     { key: 2 as const, label: 'Firma ve Hizmet' },
@@ -237,9 +230,7 @@ export function NewProtocol() {
           {/* Patient card */}
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
             <div className="flex items-center gap-3">
-              <div className={`w-12 h-12 rounded-xl border-2 flex items-center justify-center ${genderColor}`}>
-                <User className="w-6 h-6" />
-              </div>
+              <PatientAvatar gender={patient.gender} name={patient.name} photoSrc={patient.photo} size="md" />
               <div className="min-w-0">
                 <h3 className="font-bold text-slate-800 text-sm truncate">{patient.name}</h3>
                 <p className="text-xs text-slate-500">{patient.tc}</p>

@@ -45,38 +45,20 @@ npm run lint
 
 ```
 src/
-├── App.tsx                  # Router + route tanımları
-├── main.tsx                 # Entry point
+├── app/                     # App, provider zinciri, router, layout, navigasyon
+├── features/                # Paylaşılan iş yetenekleri (muayeneler, vezne)
+├── pages/                   # Route ekranları ve ekrana özel alt modüller
+├── shared/
+│   ├── components/ui/       # Genel UI bileşenleri
+│   ├── lib/                 # Tarih, storage, SMS, Excel vb. yardımcılar
+│   └── types/               # Alan bazında ayrılmış ortak modeller
+├── state/
+│   └── fixtures/            # Context provider'ları ve başlangıç verileri
 ├── index.css                # Tailwind + global stiller
-├── components/              # Paylaşılan bileşenler
-│   ├── ui/                  # UI primitives (Input, Modal, CopyButton, Charts, StatCard)
-│   ├── Layout.tsx           # Sidebar + topbar + menü
-│   ├── Login.tsx            # Giriş sayfası
-│   └── ...
-├── context/                 # React Context providers ve başlangıç verileri
-│   ├── AuthContext.tsx      # Kullanıcı/rol/yetki
-│   ├── ProtocolsContext.tsx # Protokol/hizmet/ödeme
-│   ├── PatientsContext.tsx  # Hasta kayıtları
-│   ├── CompaniesContext.tsx # Firma tanımları
-│   ├── ServicesContext.tsx  # Hizmet kataloğu
-│   ├── mocks/               # Hasta/protokol/web kullanıcı başlangıç verileri
-│   └── ...
-├── pages/                   # Sayfalar (module-based)
-│   ├── dashboard/           # Ana Sayfa
-│   ├── patients/            # Hasta Kayıt
-│   ├── lab/                 # Laboratuvar (+ components/)
-│   ├── accounting/          # Muhasebe
-│   ├── external-labs/       # Dış laboratuvar (+ mocks/)
-│   ├── companies/           # Firma tanımları (+ components/)
-│   ├── settings/            # Kurum bilgileri + SMS ayarları
-│   ├── definitions/         # Tanım ve yönetim sayfaları
-│   └── ...
-├── types/                   # TypeScript tip tanımları
-└── utils/                   # Yardımcı fonksiyonlar
-    ├── sms.ts               # SMS gönderim + şablon + log
-    ├── storage.ts           # localStorage yardımcıları
-    └── ...
+└── main.tsx                 # İnce uygulama giriş noktası
 ```
+
+Ayrıntılı kurallar için [mimari rehberine](docs/ARCHITECTURE.md) bakın.
 
 ## Veri Saklama
 
@@ -113,17 +95,18 @@ Tüm veriler `localStorage`'da saklanır (backend gerektirmez):
 ```bash
 npm run build   # TypeScript + Vite build
 npm run lint    # Oxlint kontrolü
+npm run check   # Build + lint birlikte
 ```
 
 ### Yeni Sayfa Ekleme
 1. `src/pages/[module]/[PageName].tsx` oluştur
-2. `src/App.tsx`'e route ekle
-3. `src/components/Layout.tsx`'te `staticMenuItems` ve `pathToTitle`'a ekle
+2. `src/app/router/AppRouter.tsx` içine lazy route ekle
+3. `src/app/config/navigation.tsx` içine menü ve başlık bilgisini ekle
 
 ### SMS Entegrasyonu
 - Ayarlar → SMS Ayarları sayfasından sağlayıcı/şablon/test yapılandırılır
 - Firma ayarında "Sonuçlar hazır olunca SMS gönder" işaretlenirse otomatik tetiklenir
-- `src/utils/sms.ts` içinde NetGSM/Mutlucell/İletimerkezi API entegrasyonu
+- `src/shared/lib/sms.ts` içinde NetGSM/Mutlucell/İletimerkezi API entegrasyonu
 
 ## Lisans
 

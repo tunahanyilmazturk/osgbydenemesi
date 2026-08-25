@@ -1,6 +1,6 @@
-﻿import { useNavigate } from 'react-router-dom'
-import { EmptyState } from '../../../components/ui/EmptyState'
-import { Pagination } from '../../../components/ui/Pagination'
+import { useNavigate } from 'react-router-dom'
+import { EmptyState } from '@/shared/components/ui/EmptyState'
+import { Pagination } from '@/shared/components/ui/Pagination'
 
 const paymentTypeBadges: Record<string, string> = {
   Nakit: 'bg-emerald-100 text-emerald-700',

@@ -1,5 +1,5 @@
 import { FlaskConical, Printer, Users } from 'lucide-react'
-import { Modal } from '../../../components/ui/Modal'
+import { Modal } from '@/shared/components/ui/Modal'
 
 export interface BarcodeTestItem {
   name: string

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Check, Eye, Pencil, Plus, Trash2, X } from 'lucide-react'
-import { PageHeader } from '../../components/PageHeader'
-import { useToast } from '../../context/ToastContext'
+import { PageHeader } from '@/shared/components/PageHeader'
+import { useToast } from '@/state/ToastContext'
 import {
   type EyeTemplate,
   type EyeTemplateCategory,
@@ -10,7 +10,7 @@ import {
   addEyeTemplate,
   updateEyeTemplate,
   deleteEyeTemplate,
-} from '../../utils/eyeTemplates'
+} from '@/shared/lib/eyeTemplates'
 
 const COLOR_CLASSES: Record<string, { border: string; bg: string; header: string; badge: string; button: string }> = {
   blue: {
@@ -85,7 +85,7 @@ export function EyeExamTemplates() {
   }
 
   return (
-    <div className="space-y-4 h-full flex flex-col min-h-0">
+    <div className="viewport-page">
       <PageHeader
         title="Göz Muayenesi Şablonları"
         subtitle="Değerlendirme, tanı ve sonuç yorumu şablonlarını yönetin. Göz muayenesi modalında kullanılır."

@@ -1,12 +1,12 @@
-﻿import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { ArrowRightLeft, Banknote, Calendar, CreditCard, Filter, History, RefreshCcw, Save, Trash2 } from 'lucide-react'
-import { useProtocols } from '../../context/ProtocolsContext'
-import { PageHeader } from '../../components/PageHeader'
-import { useToast } from '../../context/ToastContext'
-import { useCash } from '../../context/CashContext'
-import { useConfirm } from '../../context/ConfirmContext'
+import { useProtocols } from '@/state/ProtocolsContext'
+import { PageHeader } from '@/shared/components/PageHeader'
+import { useToast } from '@/state/ToastContext'
+import { useCash } from '@/state/CashContext'
+import { useConfirm } from '@/state/ConfirmContext'
 
-import { nowLocalDate } from '../../utils/date'
+import { nowLocalDate } from '@/shared/lib/date'
 
 const paymentTypeBadges: Record<string, string> = {
   Nakit: 'bg-emerald-100 text-emerald-700',
@@ -22,7 +22,7 @@ export function CashTransfer() {
   const { showToast } = useToast()
   const confirm = useConfirm()
 
-  const activeAccounts = cashAccounts.filter((a) => a.active)
+  const activeAccounts = useMemo(() => cashAccounts.filter((account) => account.active), [cashAccounts])
   const defaultFrom = activeAccounts[0]?.name ?? 'MERKEZ KASA'
   const defaultTo = activeAccounts[1]?.name ?? activeAccounts[0]?.name ?? 'MERKEZ KASA'
 
@@ -36,15 +36,10 @@ export function CashTransfer() {
   const [filterStart, setFilterStart] = useState(nowLocalDate())
   const [filterEnd, setFilterEnd] = useState(nowLocalDate())
 
-  // form kasalar deaktif olursa güncelle
-  useEffect(() => {
-    if (!activeAccounts.find((a) => a.name === form.from)) {
-      setForm((prev) => ({ ...prev, from: defaultFrom }))
-    }
-    if (!activeAccounts.find((a) => a.name === form.to) || form.from === form.to) {
-      setForm((prev) => ({ ...prev, to: activeAccounts.find((a) => a.name !== prev.from)?.name ?? defaultFrom }))
-    }
-  }, [activeAccounts, defaultFrom, form.from, form.to])
+  const effectiveFrom = activeAccounts.some((account) => account.name === form.from) ? form.from : defaultFrom
+  const effectiveTo = activeAccounts.some((account) => account.name === form.to) && form.to !== effectiveFrom
+    ? form.to
+    : activeAccounts.find((account) => account.name !== effectiveFrom)?.name ?? effectiveFrom
 
   const paymentsByType = useMemo(() => {
     const totals: Record<string, number> = {
@@ -120,20 +115,20 @@ export function CashTransfer() {
       showToast('warning', 'Geçersiz tutar', 'Tutar 0\'dan büyük olmalıdır.')
       return
     }
-    if (form.from === form.to) {
+    if (effectiveFrom === effectiveTo) {
       showToast('warning', 'Aynı kasa seçilemez', 'Kaynak ve hedef kasa farklı olmalıdır.')
       return
     }
 
     addTransfer({
       date: form.date,
-      from: form.from,
-      to: form.to,
+      from: effectiveFrom,
+      to: effectiveTo,
       amount,
       description: form.description,
     })
     setForm({ from: defaultFrom, to: defaultTo, amount: '', date: nowLocalDate(), description: '' })
-    showToast('success', 'Transfer kaydedildi', `${form.from} → ${form.to}: ₺${amount.toFixed(2)}`)
+    showToast('success', 'Transfer kaydedildi', `${effectiveFrom} → ${effectiveTo}: ₺${amount.toFixed(2)}`)
   }
 
   const handleDelete = async (id: number) => {
@@ -218,7 +213,7 @@ export function CashTransfer() {
             <div>
               <label className="block text-[10px] font-semibold text-slate-500 mb-1">Kaynak Kasa</label>
               <select
-                value={form.from}
+                value={effectiveFrom}
                 onChange={(e) => setForm({ ...form, from: e.target.value })}
                 className="w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-blue-500"
               >
@@ -228,7 +223,7 @@ export function CashTransfer() {
             <div>
               <label className="block text-[10px] font-semibold text-slate-500 mb-1">Hedef Kasa</label>
               <select
-                value={form.to}
+                value={effectiveTo}
                 onChange={(e) => setForm({ ...form, to: e.target.value })}
                 className="w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-blue-500"
               >

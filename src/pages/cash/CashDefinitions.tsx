@@ -1,9 +1,9 @@
-﻿import { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Plus, Save, Search, X, Wallet, Building2, TrendingUp, TrendingDown } from 'lucide-react'
-import { useCash } from '../../context/CashContext'
-import { useProtocols } from '../../context/ProtocolsContext'
-import { PageHeader } from '../../components/PageHeader'
-import { useToast } from '../../context/ToastContext'
+import { useCash } from '@/state/CashContext'
+import { useProtocols } from '@/state/ProtocolsContext'
+import { PageHeader } from '@/shared/components/PageHeader'
+import { useToast } from '@/state/ToastContext'
 
 export function CashDefinitions() {
   const { cashAccounts, addCashAccount, updateCashAccount, toggleCashAccountActive, transfers } = useCash()
@@ -93,7 +93,7 @@ export function CashDefinitions() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="viewport-page">
       <PageHeader
         title="Kasa Tanımları"
         subtitle="Kasa ve banko tanımlarını oluşturun ve yönetin."
@@ -171,8 +171,8 @@ export function CashDefinitions() {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <table className="w-full text-left text-sm">
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex-1 min-h-0 surface-scroll">
+        <table className="w-full text-left text-sm sticky-table-header">
           <thead className="bg-slate-50 text-slate-600">
             <tr>
               <th className="px-4 py-3 font-medium">#</th>

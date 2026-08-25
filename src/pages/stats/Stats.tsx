@@ -1,12 +1,13 @@
-﻿import { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Download, Filter, RotateCcw } from 'lucide-react'
-import { useProtocols } from '../../context/ProtocolsContext'
-import { usePatients } from '../../context/PatientsContext'
-import { useServices } from '../../context/ServicesContext'
-import { PageHeader } from '../../components/PageHeader'
-import { useToast } from '../../context/ToastContext'
-import { nowLocalDate, addDays } from '../../utils/date'
-import { downloadExcelReport } from '../../utils/excel'
+import { useProtocols } from '@/state/ProtocolsContext'
+import { usePatients } from '@/state/PatientsContext'
+import { useServices } from '@/state/ServicesContext'
+import { PageHeader } from '@/shared/components/PageHeader'
+import { useToast } from '@/state/ToastContext'
+import { nowLocalDate, addDays } from '@/shared/lib/date'
+import { downloadExcelReport } from '@/shared/lib/excel'
+import { StatCard, TableCard } from '@/pages/stats/components/StatsCards'
 
 interface FilteredService {
   id: number
@@ -327,72 +328,8 @@ export function Stats() {
     showToast('success', 'Excel raporu indirildi', `${filteredRows.length} kayıt biçimlendirilmiş olarak dışa aktarıldı.`)
   }
 
-  const StatCard = ({
-    title,
-    value,
-    sub,
-    color,
-  }: {
-    title: string
-    value: string | number
-    sub?: string
-    color: string
-  }) => (
-    <div className={`rounded-2xl border border-slate-100 shadow-sm p-4 ${color}`}>
-      <p className="text-[10px] font-semibold text-slate-500 uppercase">{title}</p>
-      <p className="text-2xl font-bold text-slate-800 mt-1">{value}</p>
-      {sub && <p className="text-xs text-slate-500 mt-0.5">{sub}</p>}
-    </div>
-  )
-
-  const TableCard = ({
-    title,
-    headers,
-    rows,
-  }: {
-    title: string
-    headers: string[]
-    rows: (string | number)[][]
-  }) => (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 overflow-hidden">
-      <h4 className="text-sm font-bold text-slate-800 mb-3">{title}</h4>
-      <div className="overflow-x-auto max-h-72 overflow-y-auto">
-        <table className="w-full text-left text-xs">
-          <thead className="bg-slate-50 text-slate-500 sticky top-0">
-            <tr>
-              {headers.map((h, i) => (
-                <th key={i} className="px-3 py-2 font-medium whitespace-nowrap">
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {rows.length === 0 ? (
-              <tr>
-                <td colSpan={headers.length} className="px-3 py-4 text-center text-slate-400">
-                  Veri yok
-                </td>
-              </tr>
-            ) : (
-              rows.map((row, i) => (
-                <tr key={i} className="hover:bg-slate-50">
-                  {row.map((cell, j) => (
-                    <td key={j} className="px-3 py-2 text-slate-600 whitespace-nowrap">
-                      {cell}
-                    </td>
-                  ))}
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )
-
   return (
-    <div className="space-y-4 h-full flex flex-col min-h-0">
+    <div className="viewport-page">
       <PageHeader
         title="İstatistikler"
         subtitle="Günlük, haftalık ve aylık performans raporlarını görüntüleyin."

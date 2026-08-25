@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { Barcode, Check, Printer, RotateCcw, Save, Settings2 } from 'lucide-react'
-import { PageHeader } from '../../components/PageHeader'
-import { Input } from '../../components/ui/Input'
-import { Select } from '../../components/ui/Select'
-import { useToast } from '../../context/ToastContext'
-import { useProtocols } from '../../context/ProtocolsContext'
-import { DEFAULT_BARCODE_SETTINGS, formatBarcode, loadBarcodeSettings, saveBarcodeSettings, type BarcodeSettings } from '../../utils/barcodeSettings'
+import { PageHeader } from '@/shared/components/PageHeader'
+import { Input } from '@/shared/components/ui/Input'
+import { Select } from '@/shared/components/ui/Select'
+import { useToast } from '@/state/ToastContext'
+import { useProtocols } from '@/state/ProtocolsContext'
+import { DEFAULT_BARCODE_SETTINGS, formatBarcode, loadBarcodeSettings, saveBarcodeSettings, type BarcodeSettings } from '@/shared/lib/barcodeSettings'
 
 export function BarcodeSettings() {
   const { showToast } = useToast()
@@ -47,7 +47,7 @@ export function BarcodeSettings() {
   const sampleBarcode = formatBarcode(nextSequence, form)
 
   return (
-    <div className="space-y-4">
+    <div className="viewport-scroll space-y-3">
       <PageHeader
         title="Barkod Ayarları"
         subtitle="Barkod numarası, yazdırma ve etiket görünüm ayarlarını tek yerden yönetin."

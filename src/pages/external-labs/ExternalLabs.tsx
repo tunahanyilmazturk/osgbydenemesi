@@ -1,36 +1,15 @@
-﻿import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Pencil, Plus, Search, Trash2 } from 'lucide-react'
-import { PageHeader } from '../../components/PageHeader'
-import { useConfirm } from '../../context/ConfirmContext'
-import { defaultExternalLabs } from './mocks/externalLabsDefaults'
-import type { ExternalLab } from '../../types'
-
-const STORAGE_KEY = 'cetka-external-labs'
-
-function loadLabs(): ExternalLab[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) {
-      const parsed = JSON.parse(raw) as ExternalLab[]
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed
-    }
-  } catch {
-    // ignore
-  }
-  return defaultExternalLabs
-}
-
-function saveLabs(labs: ExternalLab[]) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(labs))
-  } catch {
-    // Storage may be unavailable or full; keep the in-memory list usable.
-  }
-}
+import { PageHeader } from '@/shared/components/PageHeader'
+import { useConfirm } from '@/state/ConfirmContext'
+import { loadExternalLabs, saveExternalLabs } from '@/pages/external-labs/data/externalLabsStorage'
+import type { ExternalLab } from '@/shared/types'
+import { useToast } from '@/state/ToastContext'
 
 export function ExternalLabs() {
   const confirm = useConfirm()
-  const [labs, setLabs] = useState<ExternalLab[]>(loadLabs)
+  const { showToast } = useToast()
+  const [labs, setLabs] = useState<ExternalLab[]>(loadExternalLabs)
   const [search, setSearch] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingLab, setEditingLab] = useState<ExternalLab | null>(null)
@@ -45,7 +24,7 @@ export function ExternalLabs() {
   })
 
   useEffect(() => {
-    saveLabs(labs)
+    saveExternalLabs(labs)
   }, [labs])
 
   const filteredLabs = useMemo(() => {
@@ -90,13 +69,37 @@ export function ExternalLabs() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    const name = form.name.trim()
+    const institutionCode = form.institutionCode.trim()
+    if (!name) {
+      showToast('warning', 'Laboratuvar adı gerekli')
+      return
+    }
+    if (labs.some((lab) => lab.id !== editingLab?.id && lab.name.trim().toLocaleLowerCase('tr-TR') === name.toLocaleLowerCase('tr-TR'))) {
+      showToast('warning', 'Laboratuvar zaten mevcut', 'Aynı adla ikinci bir dış laboratuvar oluşturamazsınız.')
+      return
+    }
+    if (institutionCode && labs.some((lab) => lab.id !== editingLab?.id && lab.institutionCode.trim().toLocaleLowerCase('tr-TR') === institutionCode.toLocaleLowerCase('tr-TR'))) {
+      showToast('warning', 'Kurum kodu kullanılıyor', 'Her laboratuvar için farklı bir kurum kodu girin.')
+      return
+    }
+    const normalizedForm = {
+      ...form,
+      name,
+      institutionCode,
+      username: form.username.trim(),
+      webServiceAddress: form.webServiceAddress.trim(),
+      type: form.type.trim(),
+    }
     if (editingLab) {
       setLabs((prev) =>
-        prev.map((lab) => (lab.id === editingLab.id ? { ...lab, ...form } : lab))
+        prev.map((lab) => (lab.id === editingLab.id ? { ...lab, ...normalizedForm } : lab))
       )
+      showToast('success', 'Laboratuvar güncellendi')
     } else {
       const id = Math.max(0, ...labs.map((l) => l.id)) + 1
-      setLabs((prev) => [...prev, { id, ...form }])
+      setLabs((prev) => [...prev, { id, ...normalizedForm }])
+      showToast('success', 'Laboratuvar eklendi')
     }
     closeModal()
   }
@@ -116,7 +119,7 @@ export function ExternalLabs() {
   }
 
   return (
-    <div className="space-y-4 h-full flex flex-col">
+    <div className="viewport-page">
       <PageHeader
         title="Dış Laboratuvar Tanımları"
         subtitle="Dış laboratuvar bağlantılarını ve gönderim ayarlarını yönetin."
