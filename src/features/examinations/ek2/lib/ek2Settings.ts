@@ -32,6 +32,13 @@ export interface Ek2Settings {
   defaultConditions: string
   defaultConclusion: 'Çalışmaya Uygundur' | 'Şartlı Uygundur' | 'Çalışmaya Uygun Değildir' | 'Değerlendirme Bekliyor'
   opinionTemplates: Ek2OpinionTemplate[]
+  stamps: Ek2Stamp[]
+}
+
+export interface Ek2Stamp {
+  id: string
+  name: string
+  image: string
 }
 
 export interface Ek2OpinionTemplate {
@@ -103,6 +110,7 @@ export const DEFAULT_EK2_SETTINGS: Ek2Settings = {
   defaultConditions: '',
   defaultConclusion: 'Değerlendirme Bekliyor',
   opinionTemplates: DEFAULT_EK2_OPINIONS,
+  stamps: [],
 }
 
 export const EK2_TRANSFER_TARGETS: Array<{ value: Ek2TransferTarget; label: string; description: string }> = [
@@ -149,6 +157,15 @@ export function loadEk2Settings(): Ek2Settings {
   const opinions = Array.isArray(stored.opinionTemplates)
     ? stored.opinionTemplates.filter((item) => item && typeof item.id === 'string' && typeof item.title === 'string' && Array.isArray(item.conditions))
     : DEFAULT_EK2_OPINIONS
+  const stamps = Array.isArray(stored.stamps)
+    ? stored.stamps.filter((item): item is Ek2Stamp => (
+      item !== null
+      && typeof item === 'object'
+      && typeof item.id === 'string'
+      && typeof item.name === 'string'
+      && typeof item.image === 'string'
+    )).slice(0, 5)
+    : []
   return {
     ...DEFAULT_EK2_SETTINGS,
     ...stored,
@@ -158,11 +175,12 @@ export function loadEk2Settings(): Ek2Settings {
     narrativeDefaults: { ...DEFAULT_EK2_SETTINGS.narrativeDefaults, ...stored.narrativeDefaults },
     physicalExaminationDefaults: { ...DEFAULT_EK2_SETTINGS.physicalExaminationDefaults, ...stored.physicalExaminationDefaults },
     opinionTemplates: opinions,
+    stamps,
   }
 }
 
 export function saveEk2Settings(settings: Ek2Settings) {
-  saveToStorage(EK2_SETTINGS_KEY, settings)
+  saveToStorage(EK2_SETTINGS_KEY, { ...settings, stamps: settings.stamps.slice(0, 5) })
 }
 
 export function resolveEk2TransferTarget(

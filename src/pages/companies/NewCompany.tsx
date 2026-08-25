@@ -33,6 +33,7 @@ const emptyCompany: Omit<Company, 'id'> = {
   active: true,
   notes: '',
   smsOnResultReady: false,
+  ek2DoctorId: '',
 }
 
 const dangerColors: Record<DangerClass, string> = {

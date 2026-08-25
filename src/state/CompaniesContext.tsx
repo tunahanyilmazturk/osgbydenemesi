@@ -31,6 +31,7 @@ export interface Company {
   active: boolean
   notes: string
   smsOnResultReady?: boolean
+  ek2DoctorId?: string
 }
 
 const initialCompanies: Company[] = [

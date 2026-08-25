@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react'
-import { Activity, BriefcaseBusiness, Building2, CheckCircle2, ClipboardCheck, Copy, FileHeart, HeartPulse, Save, Sparkles } from 'lucide-react'
+import { Activity, BriefcaseBusiness, Building2, CheckCircle2, ClipboardCheck, Copy, Download, FileHeart, FileText, HeartPulse, Save, Sparkles } from 'lucide-react'
 import { Modal } from '@/shared/components/ui/Modal'
 import { PatientAvatar } from '@/shared/components/ui/PatientAvatar'
 import { loadDoctors } from '@/shared/lib/doctors'
 import { applyEk2AutomaticValues, buildEk2AutomaticValues } from '@/features/examinations/ek2/lib/ek2AutoFill'
+import { downloadEk2Pdf, openEk2Pdf } from '@/features/examinations/ek2/lib/ek2Report'
 import { EK2_DISEASES, EK2_NARRATIVE_FIELDS, EK2_PHYSICAL_FIELDS, EK2_SYMPTOMS, loadEk2Settings } from '@/features/examinations/ek2/lib/ek2Settings'
 import type { Company } from '@/state/CompaniesContext'
 import type { Ek2Data, Ek2MedicalAnswer, PatientDetail, Protocol, ProtocolService } from '@/shared/types'
@@ -44,9 +45,24 @@ const labelClass = 'mb-1 block text-[10px] font-semibold uppercase tracking-wide
 
 function emptyAnswer(): Ek2MedicalAnswer { return { answer: '', note: '' } }
 function uid() { return `work-${Date.now()}-${Math.random().toString(36).slice(2, 7)}` }
+function buildBaseResult(department: string): string {
+  const normalizedDepartment = department.trim()
+  return `${normalizedDepartment ? `${normalizedDepartment} işinde` : 'İşinde'} bedenen ve ruhen çalışmaya elverişlidir.`
+}
+function appendUniqueLine(current: string, value: string): string {
+  const line = value.trim()
+  if (!line) return current
+  const lines = current.split('\n').map((item) => item.trim()).filter(Boolean)
+  return lines.includes(line) ? current : [...lines, line].join('\n')
+}
+function composeResultText(department: string, ...details: string[]): string {
+  return details.flatMap((detail) => detail.split('\n')).reduce((result, detail) => appendUniqueLine(result, detail), buildBaseResult(department))
+}
 
 function createInitialData(patient?: PatientDetail | null, protocol?: Protocol | null, company?: Company): Ek2Data {
-  const doctor = loadDoctors().find((item) => item.testType.toLocaleUpperCase('tr-TR').includes('EK-2'))
+  const doctors = loadDoctors()
+  const doctor = doctors.find((item) => item.id === company?.ek2DoctorId)
+    ?? doctors.find((item) => item.testType.toLocaleUpperCase('tr-TR').includes('EK-2'))
   const settings = loadEk2Settings()
   const answers: Record<string, Ek2MedicalAnswer> = {}
   ;[...SYMPTOMS, ...DISEASES].forEach(([key]) => { answers[key] = settings.anamnesisDefaults[key] ?? emptyAnswer() })
@@ -69,8 +85,11 @@ function createInitialData(patient?: PatientDetail | null, protocol?: Protocol |
     physicalExamination: Object.fromEntries(PHYSICAL_FIELDS.map(([key]) => [key, settings.autoFillPhysicalExamination ? settings.physicalExaminationDefaults[key] ?? '' : ''])),
     measurements: { bloodPressure: '', pulse: '', height: '', weight: '', bmi: '' },
     laboratoryFindings: Object.fromEntries(LAB_FIELDS.map(([key]) => [key, ''])),
-    opinion: settings.defaultOpinion, conditions: settings.defaultConditions, conclusion: settings.defaultConclusion, doctorId: doctor?.id ?? '',
-    doctorName: doctor ? `${doctor.title} ${doctor.name}`.trim() : '', status: 'Taslak', updatedAt: new Date().toISOString(),
+    opinion: settings.defaultOpinion, conditions: settings.defaultConditions,
+    resultText: composeResultText(protocol?.department ?? '', settings.defaultOpinion, settings.defaultConditions),
+    conclusion: settings.defaultConclusion, doctorId: doctor?.id ?? '',
+    doctorName: doctor ? `${doctor.title} ${doctor.name}`.trim() : '', doctorStamp: doctor?.stamp || undefined,
+    status: 'Taslak', updatedAt: new Date().toISOString(),
   }
 }
 
@@ -79,7 +98,7 @@ function parseData(service: ProtocolService | null, patient?: PatientDetail | nu
   if (!service?.ek2Data) return fallback
   try {
     const saved = JSON.parse(service.ek2Data) as Partial<Ek2Data>
-    return {
+    const merged = {
       ...fallback, ...saved,
       workplace: { ...fallback.workplace, ...saved.workplace }, employee: { ...fallback.employee, ...saved.employee },
       immunization: { ...fallback.immunization, ...saved.immunization }, familyHistory: { ...fallback.familyHistory, ...saved.familyHistory },
@@ -87,6 +106,13 @@ function parseData(service: ProtocolService | null, patient?: PatientDetail | nu
       measurements: { ...fallback.measurements, ...saved.measurements }, medicalAnswers: { ...fallback.medicalAnswers, ...saved.medicalAnswers },
       narrativeAnswers: { ...fallback.narrativeAnswers, ...saved.narrativeAnswers }, physicalExamination: { ...fallback.physicalExamination, ...saved.physicalExamination },
       laboratoryFindings: { ...fallback.laboratoryFindings, ...saved.laboratoryFindings }, workHistory: saved.workHistory?.length ? saved.workHistory : fallback.workHistory,
+    }
+    return {
+      ...merged,
+      doctorId: saved.doctorId || fallback.doctorId,
+      doctorName: saved.doctorId ? (saved.doctorName || fallback.doctorName) : fallback.doctorName,
+      doctorStamp: saved.doctorId ? (saved.doctorStamp || loadDoctors().find((doctor) => doctor.id === saved.doctorId)?.stamp) : fallback.doctorStamp,
+      resultText: saved.resultText ?? composeResultText(merged.employee.department, saved.opinion ?? '', saved.conditions ?? ''),
     }
   } catch { return fallback }
 }
@@ -115,7 +141,13 @@ export function Ek2Modal({ isOpen, onClose, service, patient, protocol, company,
   const completedAnswers = Object.values(data.medicalAnswers).filter((answer) => answer.answer).length
   const completion = Math.round((completedAnswers / Math.max(1, Object.keys(data.medicalAnswers).length)) * 45 + (data.employee.fullName && data.employee.tc ? 20 : 0) + (data.workplace.title ? 10 : 0) + (Object.values(data.physicalExamination).filter(Boolean).length / PHYSICAL_FIELDS.length) * 15 + (data.conclusion !== 'Değerlendirme Bekliyor' ? 10 : 0))
 
-  const updateEmployee = (key: keyof Ek2Data['employee'], value: string) => setData((previous) => ({ ...previous, employee: { ...previous.employee, [key]: value } }))
+  const updateEmployee = (key: keyof Ek2Data['employee'], value: string) => setData((previous) => {
+    if (key !== 'department') return { ...previous, employee: { ...previous.employee, [key]: value } }
+    const oldBase = buildBaseResult(previous.employee.department)
+    const nextBase = buildBaseResult(value)
+    const resultText = previous.resultText.startsWith(oldBase) ? `${nextBase}${previous.resultText.slice(oldBase.length)}` : previous.resultText || nextBase
+    return { ...previous, employee: { ...previous.employee, department: value }, resultText }
+  })
   const updateWorkplace = (key: keyof Ek2Data['workplace'], value: string) => setData((previous) => ({ ...previous, workplace: { ...previous.workplace, [key]: value } }))
   const updateMedical = (key: string, patch: Partial<Ek2MedicalAnswer>) => setData((previous) => ({ ...previous, medicalAnswers: { ...previous.medicalAnswers, [key]: { ...(previous.medicalAnswers[key] ?? emptyAnswer()), ...patch } } }))
   const calculateBmi = (height: string, weight: string) => {
@@ -130,6 +162,11 @@ export function Ek2Modal({ isOpen, onClose, service, patient, protocol, company,
     physicalExamination: ek2Settings.autoFillPhysicalExamination ? { ...ek2Settings.physicalExaminationDefaults } : previous.physicalExamination,
     opinion: ek2Settings.defaultOpinion || 'Yapılan işe giriş/periyodik muayene ve tetkikler sonucunda çalışanın sağlık açısından değerlendirmesi tamamlanmıştır.',
     conditions: ek2Settings.defaultConditions,
+    resultText: composeResultText(
+      previous.employee.department,
+      ek2Settings.defaultOpinion || 'Yapılan işe giriş/periyodik muayene ve tetkikler sonucunda çalışanın sağlık açısından değerlendirmesi tamamlanmıştır.',
+      ek2Settings.defaultConditions,
+    ),
     conclusion: ek2Settings.defaultConclusion === 'Değerlendirme Bekliyor' ? 'Çalışmaya Uygundur' : ek2Settings.defaultConclusion,
     status: 'Taslak',
   }))
@@ -153,8 +190,24 @@ export function Ek2Modal({ isOpen, onClose, service, patient, protocol, company,
     }
     const updated: Ek2Data = { ...data, status: complete ? 'Tamamlandı' : 'Taslak', updatedAt: new Date().toISOString() }
     setData(updated)
-    const result = complete ? updated.conclusion : 'EK-2 taslak kaydedildi'
+    const result = complete ? updated.resultText : 'EK-2 taslak kaydedildi'
     onSave(JSON.stringify(updated), result, complete)
+  }
+
+  const previewPdf = () => {
+    if (!patient || !protocol || !service) return
+    void openEk2Pdf({ patient, protocol, service, data }).catch((error) => {
+      console.error('EK-2 PDF önizlemesi açılamadı:', error)
+      setValidationMessage(error instanceof Error ? error.message : 'EK-2 PDF önizlemesi oluşturulamadı.')
+    })
+  }
+
+  const downloadPdf = () => {
+    if (!patient || !protocol || !service) return
+    void downloadEk2Pdf({ patient, protocol, service, data }).catch((error) => {
+      console.error('EK-2 PDF indirilemedi:', error)
+      setValidationMessage(error instanceof Error ? error.message : 'EK-2 PDF indirilemedi.')
+    })
   }
 
   const renderQuestions = (questions: ReadonlyArray<readonly [string, string]>) => (
@@ -207,18 +260,18 @@ export function Ek2Modal({ isOpen, onClose, service, patient, protocol, company,
             <Card title="Laboratuvar ve Tetkik Bulguları" subtitle={automaticValues.sourceCount > 0 ? `${automaticValues.sourceCount} sonuçlu tetkik hasta kayıtlarından otomatik aktarıldı; alanlar düzenlenebilir.` : 'Henüz aktarılabilecek sonuçlu tetkik bulunamadı.'}><div className="grid gap-3 md:grid-cols-2">{LAB_FIELDS.map(([key,label]) => <TextArea key={key} label={label} value={data.laboratoryFindings[key] ?? ''} onChange={(value) => setData((previous) => ({ ...previous, laboratoryFindings: { ...previous.laboratoryFindings, [key]: value } }))} />)}</div></Card>
             <Card title="Hekim Kanaati ve Sonuç"><div className="space-y-3">
               <div className="grid gap-3 md:grid-cols-2">
-                <label><span className={labelClass}>Hazır Kanaat</span><select value={selectedOpinionId} onChange={(event) => { const template = ek2Settings.opinionTemplates.find((item) => item.id === event.target.value); setSelectedOpinionId(event.target.value); if (template) setData((previous) => ({ ...previous, opinion: template.title })) }} className={inputClass}><option value="">Kanaat seçin</option>{ek2Settings.opinionTemplates.map((template) => <option key={template.id} value={template.id}>{template.title}</option>)}</select></label>
-                <label><span className={labelClass}>Hazır Çalışma Koşulu</span><select value="" disabled={!selectedOpinionId} onChange={(event) => { const condition = event.target.value; if (!condition) return; setData((previous) => ({ ...previous, conditions: [previous.conditions.trim(), condition].filter(Boolean).join('\n') })) }} className={inputClass}><option value="">Koşul ekleyin</option>{ek2Settings.opinionTemplates.find((item) => item.id === selectedOpinionId)?.conditions.map((condition) => <option key={condition} value={condition}>{condition}</option>)}</select></label>
+                <label><span className={labelClass}>Hazır Kanaat Ekle</span><select value={selectedOpinionId} onChange={(event) => { const template = ek2Settings.opinionTemplates.find((item) => item.id === event.target.value); setSelectedOpinionId(event.target.value); if (template) setData((previous) => ({ ...previous, opinion: appendUniqueLine(previous.opinion, template.title), resultText: appendUniqueLine(previous.resultText, template.title) })) }} className={inputClass}><option value="">Kanaat seçin</option>{ek2Settings.opinionTemplates.map((template) => <option key={template.id} value={template.id}>{template.title}</option>)}</select></label>
+                <label><span className={labelClass}>Hazır Çalışma Koşulu Ekle</span><select value="" disabled={!selectedOpinionId} onChange={(event) => { const condition = event.target.value; if (!condition) return; setData((previous) => ({ ...previous, conditions: appendUniqueLine(previous.conditions, condition), resultText: appendUniqueLine(previous.resultText, condition) })) }} className={inputClass}><option value="">Koşul ekleyin</option>{ek2Settings.opinionTemplates.find((item) => item.id === selectedOpinionId)?.conditions.map((condition) => <option key={condition} value={condition}>{condition}</option>)}</select></label>
               </div>
-              <TextArea label="Kanaat" rows={3} value={data.opinion} onChange={(opinion) => setData((previous) => ({ ...previous, opinion }))} />
-              <TextArea label="Çalışma Koşulları / Kısıtlamalar" value={data.conditions} onChange={(conditions) => setData((previous) => ({ ...previous, conditions }))} placeholder="Varsa süre, kontrol tarihi, KKD veya görev kısıtı" />
-              <div className="grid gap-3 md:grid-cols-2"><label><span className={labelClass}>Sonuç</span><select value={data.conclusion} onChange={(event) => setData((previous) => ({ ...previous, conclusion: event.target.value as Ek2Data['conclusion'] }))} className={inputClass}>{['Değerlendirme Bekliyor','Çalışmaya Uygundur','Şartlı Uygundur','Çalışmaya Uygun Değildir'].map((value) => <option key={value}>{value}</option>)}</select></label><label><span className={labelClass}>Doktor</span><select value={data.doctorId} onChange={(event) => { const doctor = doctors.find((item) => item.id === event.target.value); setData((previous) => ({ ...previous, doctorId: event.target.value, doctorName: doctor ? `${doctor.title} ${doctor.name}`.trim() : '' })) }} className={inputClass}><option value="">Doktor seçin</option>{doctors.map((doctor) => <option key={doctor.id} value={doctor.id}>{doctor.title} {doctor.name}</option>)}</select></label></div>
+              <TextArea label="Sonuç" rows={5} value={data.resultText} onChange={(resultText) => setData((previous) => ({ ...previous, resultText }))} placeholder="Çalıştığı bölüm ve hekim kanaatleri" />
+              <p className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-[10px] text-blue-700">İlk satır Çalıştığı Bölüm bilgisinden otomatik oluşturulur. Eklediğiniz kanaat ve koşullar bunun altında sıralanır.</p>
+              <div className="grid gap-3 md:grid-cols-2"><label><span className={labelClass}>Uygunluk Durumu</span><select value={data.conclusion} onChange={(event) => setData((previous) => ({ ...previous, conclusion: event.target.value as Ek2Data['conclusion'] }))} className={inputClass}>{['Değerlendirme Bekliyor','Çalışmaya Uygundur','Şartlı Uygundur','Çalışmaya Uygun Değildir'].map((value) => <option key={value}>{value}</option>)}</select></label><label><span className={labelClass}>Doktor</span><select value={data.doctorId} onChange={(event) => { const doctor = doctors.find((item) => item.id === event.target.value); setData((previous) => ({ ...previous, doctorId: event.target.value, doctorName: doctor ? `${doctor.title} ${doctor.name}`.trim() : '', doctorStamp: doctor?.stamp || undefined })) }} className={inputClass}><option value="">Doktor seçin</option>{doctors.map((doctor) => <option key={doctor.id} value={doctor.id}>{doctor.title} {doctor.name}</option>)}</select><span className="mt-1 block text-[9px] text-slate-400">Firma ataması varsa otomatik seçilir. Değiştirildiğinde seçilen doktorun kaşesi rapora sabitlenir.</span></label></div>
             </div></Card>
           </div>}
         </main>
       </div>
 
-      <footer className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-slate-200 bg-white px-4 py-2.5"><div className={`flex items-center gap-2 text-[10px] ${validationMessage ? 'font-semibold text-red-600' : 'text-slate-500'}`}><CheckCircle2 className={`h-4 w-4 ${validationMessage ? 'text-red-500' : data.employee.tc.length === 11 ? 'text-emerald-500' : 'text-amber-500'}`} />{validationMessage || 'T.C. ve hasta adı zorunludur. Tamamlanan rapor sonuç listesine işlenir.'}</div><div className="flex gap-2"><button type="button" onClick={onClose} className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50">Vazgeç</button><button type="button" onClick={() => save(false)} className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100"><Save className="h-3.5 w-3.5" />Taslak Kaydet</button><button type="button" onClick={() => save(true)} className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700"><ClipboardCheck className="h-3.5 w-3.5" />Raporu Tamamla</button></div></footer>
+      <footer className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-slate-200 bg-white px-4 py-2.5"><div className={`flex items-center gap-2 text-[10px] ${validationMessage ? 'font-semibold text-red-600' : 'text-slate-500'}`}><CheckCircle2 className={`h-4 w-4 ${validationMessage ? 'text-red-500' : data.employee.tc.length === 11 ? 'text-emerald-500' : 'text-amber-500'}`} />{validationMessage || 'T.C. ve hasta adı zorunludur. Tamamlanan rapor sonuç listesine işlenir.'}</div><div className="flex gap-2"><button type="button" onClick={downloadPdf} className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100"><Download className="h-3.5 w-3.5" />PDF İndir</button><button type="button" onClick={previewPdf} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"><FileText className="h-3.5 w-3.5" />Önizle</button><button type="button" onClick={onClose} className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50">Vazgeç</button><button type="button" onClick={() => save(false)} className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100"><Save className="h-3.5 w-3.5" />Taslak Kaydet</button><button type="button" onClick={() => save(true)} className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700"><ClipboardCheck className="h-3.5 w-3.5" />Raporu Tamamla</button></div></footer>
     </div>
   </Modal>
 }

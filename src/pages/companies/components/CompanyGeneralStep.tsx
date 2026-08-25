@@ -1,7 +1,9 @@
-import { Building2 } from 'lucide-react'
+import { useMemo } from 'react'
+import { Building2, Stethoscope } from 'lucide-react'
 import type { Company, CompanyType } from '@/state/CompaniesContext'
 import { Input } from '@/shared/components/ui/Input'
 import { Select } from '@/shared/components/ui/Select'
+import { loadDoctors } from '@/shared/lib/doctors'
 
 interface CompanyGeneralStepProps {
   form: Omit<Company, 'id'>
@@ -10,6 +12,7 @@ interface CompanyGeneralStepProps {
 }
 
 export function CompanyGeneralStep({ form, update, companyTypes }: CompanyGeneralStepProps) {
+  const doctors = useMemo(() => loadDoctors(), [])
   return (
     <div className="h-full bg-white rounded-2xl border border-slate-100 shadow-sm p-5 overflow-y-auto">
       <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide mb-4 flex items-center gap-2">
@@ -61,6 +64,25 @@ export function CompanyGeneralStep({ form, update, companyTypes }: CompanyGenera
           value={form.contractDate}
           onChange={(e) => update('contractDate', e.target.value)}
         />
+        <div className="rounded-xl border border-blue-100 bg-blue-50/60 p-3 md:col-span-2 lg:col-span-3">
+          <div className="mb-2 flex items-center gap-2">
+            <Stethoscope className="h-4 w-4 text-blue-600" />
+            <div>
+              <p className="text-xs font-bold text-slate-800">EK-2 İşyeri Hekimi Ataması</p>
+              <p className="text-[10px] text-slate-500">Bu firmaya açılan yeni EK-2 formlarında seçili doktor otomatik gelir; form içinde değiştirilebilir.</p>
+            </div>
+          </div>
+          <Select
+            size="sm"
+            label="Atanmış Doktor"
+            value={form.ek2DoctorId ?? ''}
+            onChange={(e) => update('ek2DoctorId', e.target.value)}
+            options={[
+              { value: '', label: 'Otomatik eşleşme / doktor seçilmedi' },
+              ...doctors.map((doctor) => ({ value: doctor.id, label: `${doctor.title} ${doctor.name}`.trim() })),
+            ]}
+          />
+        </div>
         <div className="md:col-span-2 lg:col-span-3">
           <Input
             size="sm"

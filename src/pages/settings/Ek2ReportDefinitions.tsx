@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { CheckCircle2, ClipboardList, FileHeart, Filter, Plus, RotateCcw, Save, Search, Settings2, Stethoscope, Trash2 } from 'lucide-react'
+import { CheckCircle2, ClipboardList, FileHeart, Filter, ImagePlus, Plus, RotateCcw, Save, Search, Settings2, Stamp, Stethoscope, Trash2, X } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { normalizeServiceName } from '@/shared/lib/specialServices'
 import {
@@ -15,6 +15,7 @@ import {
   saveEk2Settings,
   type Ek2OpinionTemplate,
   type Ek2Settings,
+  type Ek2Stamp,
   type Ek2TransferTarget,
 } from '@/features/examinations/ek2/lib/ek2Settings'
 import { useAuth } from '@/state/AuthContext'
@@ -45,7 +46,7 @@ export function Ek2ReportDefinitions() {
   const [search, setSearch] = useState('')
   const [groupFilter, setGroupFilter] = useState('all')
   const [targetFilter, setTargetFilter] = useState<'all' | Ek2TransferTarget>('all')
-  const [activeTab, setActiveTab] = useState<'transfer' | 'defaults' | 'opinions'>('transfer')
+  const [activeTab, setActiveTab] = useState<'transfer' | 'defaults' | 'opinions' | 'stamps'>('transfer')
 
   const groups = useMemo(() => [...new Set(services.map((service) => service.group))].sort((a, b) => a.localeCompare(b, 'tr')), [services])
   const filteredServices = useMemo(() => {
@@ -80,7 +81,7 @@ export function Ek2ReportDefinitions() {
     <div className="viewport-page">
       <PageHeader
         title="Ek-2 Ayarları"
-        subtitle="Hizmet sonuçlarının Ek-2 formunda hangi alana aktarılacağını yönetin."
+        subtitle="Test aktarımı, otomatik alanlar, kanaatler ve EK-2 PDF kaşelerini yönetin."
         action={canManage && activeTab === 'transfer' ? <div className="flex gap-2"><button type="button" onClick={handleReset} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"><RotateCcw className="h-4 w-4" />Varsayılanlar</button><button type="button" onClick={handleSave} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-blue-700"><Save className="h-4 w-4" />Ayarları Kaydet</button></div> : undefined}
       />
 
@@ -88,6 +89,7 @@ export function Ek2ReportDefinitions() {
         <TabButton active={activeTab === 'transfer'} onClick={() => setActiveTab('transfer')} icon={<Settings2 className="h-4 w-4" />} label="Test Aktarımı" />
         <TabButton active={activeTab === 'defaults'} onClick={() => setActiveTab('defaults')} icon={<Stethoscope className="h-4 w-4" />} label="Otomatik Form Alanları" />
         <TabButton active={activeTab === 'opinions'} onClick={() => setActiveTab('opinions')} icon={<ClipboardList className="h-4 w-4" />} label="Kanaat ve Koşullar" />
+        <TabButton active={activeTab === 'stamps'} onClick={() => setActiveTab('stamps')} icon={<Stamp className="h-4 w-4" />} label="PDF Kaşeleri" />
       </div>
 
       {activeTab === 'transfer' && <>
@@ -129,8 +131,94 @@ export function Ek2ReportDefinitions() {
       </>}
       {activeTab === 'defaults' && <DefaultsTab canManage={canManage} />}
       {activeTab === 'opinions' && <OpinionsTab canManage={canManage} />}
+      {activeTab === 'stamps' && <StampsTab canManage={canManage} />}
     </div>
   )
+}
+
+function resizeStampImage(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onerror = () => reject(new Error('Görsel okunamadı.'))
+    reader.onload = () => {
+      const image = new Image()
+      image.onerror = () => reject(new Error('Görsel biçimi desteklenmiyor.'))
+      image.onload = () => {
+        const maxWidth = 1200
+        const maxHeight = 600
+        const ratio = Math.min(1, maxWidth / image.naturalWidth, maxHeight / image.naturalHeight)
+        const canvas = document.createElement('canvas')
+        canvas.width = Math.max(1, Math.round(image.naturalWidth * ratio))
+        canvas.height = Math.max(1, Math.round(image.naturalHeight * ratio))
+        const context = canvas.getContext('2d')
+        if (!context) return reject(new Error('Görsel işlenemedi.'))
+        context.clearRect(0, 0, canvas.width, canvas.height)
+        context.drawImage(image, 0, 0, canvas.width, canvas.height)
+        resolve(canvas.toDataURL('image/png'))
+      }
+      image.src = String(reader.result)
+    }
+    reader.readAsDataURL(file)
+  })
+}
+
+function StampsTab({ canManage }: { canManage: boolean }) {
+  const { showToast } = useToast()
+  const [stamps, setStamps] = useState<Ek2Stamp[]>(() => loadEk2Settings().stamps)
+
+  const upload = async (file: File | null) => {
+    if (!file) return
+    if (stamps.length >= 5) {
+      showToast('warning', 'Kaşe sınırına ulaşıldı', 'EK-2 PDF için en fazla 5 kurum kaşesi yüklenebilir.')
+      return
+    }
+    if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+      showToast('warning', 'Geçersiz dosya', 'PNG, JPG veya WEBP biçiminde bir görsel seçin.')
+      return
+    }
+    if (file.size > 4 * 1024 * 1024) {
+      showToast('warning', 'Dosya çok büyük', 'Kaşe görseli 4 MB sınırını aşmamalıdır.')
+      return
+    }
+    try {
+      const image = await resizeStampImage(file)
+      setStamps((previous) => [...previous, { id: `ek2-stamp-${Date.now()}`, name: file.name.replace(/\.[^.]+$/, ''), image }].slice(0, 5))
+    } catch (error) {
+      showToast('error', 'Kaşe yüklenemedi', error instanceof Error ? error.message : 'Görsel işlenemedi.')
+    }
+  }
+
+  const save = () => {
+    saveEk2Settings({ ...loadEk2Settings(), stamps })
+    showToast('success', 'EK-2 kaşeleri kaydedildi', `${stamps.length} kurum kaşesi iki sayfalık PDF düzenine bağlandı.`)
+  }
+
+  return <div className="surface-scroll space-y-3 pr-1">
+    <section className="surface-panel p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div><h2 className="text-sm font-bold text-slate-800">EK-2 PDF Kurum Kaşeleri</h2><p className="mt-1 max-w-2xl text-[10px] leading-4 text-slate-500">Buraya yüklenen kaşeler EK-2 PDF çıktısının onay bölümünde gösterilir. Doktor kaşesi seçilen doktorun kaydından ayrıca ve sabit olarak alınır.</p></div>
+        <div className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-right"><p className="text-[10px] font-semibold text-blue-700">Kullanılan kapasite</p><p className="text-lg font-extrabold text-blue-800">{stamps.length}<span className="text-xs text-blue-500"> / 5</span></p></div>
+      </div>
+    </section>
+
+    <section className="surface-panel p-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        {stamps.map((stamp, index) => <article key={stamp.id} className="relative rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+          <div className="mb-2 flex items-center justify-between gap-2"><span className="rounded-lg bg-blue-50 px-2 py-1 text-[9px] font-bold text-blue-700">KAŞE {index + 1}</span>{canManage && <button type="button" onClick={() => setStamps((previous) => previous.filter((item) => item.id !== stamp.id))} className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600" aria-label={`${stamp.name} kaşesini kaldır`}><X className="h-4 w-4" /></button>}</div>
+          <div className="flex h-32 items-center justify-center overflow-hidden rounded-xl border border-dashed border-slate-200 bg-slate-50 p-3"><img src={stamp.image} alt={`${stamp.name} kaşesi`} className="max-h-full max-w-full object-contain" /></div>
+          <input disabled={!canManage} value={stamp.name} onChange={(event) => setStamps((previous) => previous.map((item) => item.id === stamp.id ? { ...item, name: event.target.value } : item))} className="mt-2 w-full rounded-lg border border-slate-200 px-2.5 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-blue-400 disabled:bg-slate-100" aria-label={`${index + 1}. kaşe adı`} />
+        </article>)}
+
+        {canManage && stamps.length < 5 && <label className="flex min-h-52 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-blue-200 bg-blue-50/50 p-5 text-center transition hover:border-blue-400 hover:bg-blue-50">
+          <ImagePlus className="mb-3 h-8 w-8 text-blue-500" /><span className="text-xs font-bold text-blue-800">Yeni Kaşe Yükle</span><span className="mt-1 text-[9px] leading-4 text-blue-500">PNG, JPG veya WEBP<br />En fazla 4 MB</span>
+          <input type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" onChange={(event) => { void upload(event.target.files?.[0] ?? null); event.target.value = '' }} />
+        </label>}
+      </div>
+      {stamps.length === 0 && !canManage && <div className="py-14 text-center text-xs text-slate-400">Henüz EK-2 kurum kaşesi tanımlanmadı.</div>}
+    </section>
+
+    {canManage && <div className="sticky bottom-0 flex justify-end rounded-xl border border-slate-200 bg-white/95 p-3 shadow-lg backdrop-blur-sm"><button type="button" onClick={save} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700"><Save className="h-4 w-4" />Kaşeleri Kaydet</button></div>}
+  </div>
 }
 
 function SummaryCard({ label, value, icon }: { label: string; value: number; icon: React.ReactNode }) {

@@ -9,6 +9,7 @@ import { useConfirm } from '@/state/ConfirmContext'
 import { AudiometryModal } from '@/features/examinations/audiometry/components/AudiometryModal'
 import { EyeExaminationModal } from '@/features/examinations/eye-examination/components/EyeExaminationModal'
 import { Ek2Modal } from '@/features/examinations/ek2/components/Ek2Modal'
+import { openEk2Pdf } from '@/features/examinations/ek2/lib/ek2Report'
 import { TetanusVaccinationModal } from '@/features/vaccinations/tetanus/components/TetanusVaccinationModal'
 import { formatDateLocal, nowLocalDateTime } from '@/shared/lib/date'
 import type { Ek2Data, PatientDetail, ProtocolService } from '@/shared/types'
@@ -347,6 +348,18 @@ export function Lab() {
   const handleRowDoubleClick = (serviceId: number) => {
     const service = selectedServices.find((item) => item.id === serviceId)
     if (service?.name.toLocaleUpperCase('tr-TR').includes('EK-2')) {
+      if (service.status === 'Onaylandı' && service.ek2Data && selectedPatient && selectedProtocol) {
+        try {
+          const data = JSON.parse(service.ek2Data) as Ek2Data
+          void openEk2Pdf({ patient: selectedPatient, protocol: selectedProtocol, service, data }).catch((error) => {
+            console.error('EK-2 PDF raporu açılamadı:', error)
+            showToast('error', 'EK-2 PDF açılamadı', error instanceof Error ? error.message : 'Bilinmeyen hata')
+          })
+          return
+        } catch {
+          showToast('warning', 'EK-2 kaydı okunamadı', 'Formu açıp yeniden kaydedin.')
+        }
+      }
       setSelectedEk2Service(service)
       setIsEk2ModalOpen(true)
       return

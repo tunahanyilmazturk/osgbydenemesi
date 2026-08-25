@@ -104,9 +104,11 @@ export interface Ek2Data {
   }
   opinion: string
   conditions: string
+  resultText: string
   conclusion: 'Çalışmaya Uygundur' | 'Şartlı Uygundur' | 'Çalışmaya Uygun Değildir' | 'Değerlendirme Bekliyor'
   doctorId: string
   doctorName: string
+  doctorStamp?: string
   status: 'Taslak' | 'Tamamlandı'
   updatedAt: string
 }
